@@ -43,7 +43,6 @@ class UserVariables:
 		self.APINameSamplePlate = general[general["Variable Names"] == "Name Source Plate"]["Value"].values[0]
 		self.APINameIncubationPlate = general[general["Variable Names"] == "Name Final Plate"]["Value"].values[0]
 		self.APINameFalconPlate = general[general["Variable Names"] == "Name 15mL Tuberack"]["Value"].values[0]
-		self.valueReplaceTiprack = pipettes[pipettes["Variable Names"] == "Replace Tipracks"]["Value"].values[0]
 		self.APINameTipR = pipettes[pipettes["Variable Names"] == "API Name Right Pipette TipRack"]["Value"].values[0]
 		self.APINameTipL = pipettes[pipettes["Variable Names"] == "API Name Left Pipette TipRack"]["Value"].values[0]
 		
@@ -51,7 +50,7 @@ class UserVariables:
 		self.nameSourcePlates = list(each_plate.columns)
 		self.nameSourcePlates.remove("Variable Names")
 
-		self.replaceTiprack = pipettes[pipettes["Variable Names"] == "Replace Tipracks"]["Value"].values[0]
+		self.replaceTiprack = str(pipettes[pipettes["Variable Names"] == "Replace Tipracks"]["Value"].values[0])
 		
 		return
 	
@@ -66,11 +65,11 @@ class UserVariables:
 		labware_context = opentrons.protocol_api.labware
 		
 		# Check none of the values are empty
-		if any(pd.isna(element) for element in [self.numberSourcePlates, self.nameAntibiotics, self.volumeAntibiotic, self.volumeSample, self.APINamePipR, self.APINamePipL, self.startingTipPipR, self.startingTipPipL, self.APINameSamplePlate, self.APINameIncubationPlate, self.APINameFalconPlate, self.valueReplaceTiprack, self.APINameTipR, self.APINameTipL, self.replaceTiprack]):
+		if any(pd.isna(element) for element in [self.numberSourcePlates, self.nameAntibiotics, self.volumeAntibiotic, self.volumeSample, self.APINamePipR, self.APINamePipL, self.startingTipPipR, self.startingTipPipL, self.APINameSamplePlate, self.APINameIncubationPlate, self.APINameFalconPlate, self.replaceTiprack, self.APINameTipR, self.APINameTipL, self.replaceTiprack]):
 			raise Exception("None of the cells in the sheets 'GeneralVariables' and 'PipetteVariables' can be left empty")
 		else:
 			self.nameAntibiotics = self.nameAntibiotics.replace(" ","").split(",")
-			self.valueReplaceTiprack =self.valueReplaceTiprack.lower()
+			self.replaceTiprack = self.replaceTiprack.lower()
 		if all(pd.isna(element) for element in self.samplesPerPlate):
 			raise Exception("The Variable 'Samples per plate' cannot be left completely empty, it is necessary to have as many values as the value in 'Number of Source Plates'")
 		if all(pd.isna(element) for element in self.firstWellSamplePerPlate):
@@ -173,10 +172,11 @@ class UserVariables:
 			raise Exception ("Either the sample labware of the final labware does not have 8 rows, which is neccesary for this protocol with 8-channel pipette to work")
 		
 		# Check that the first well with a sample + number of samples does not exceed the source plate wells
+
 		for index_plate, number_reactions in enumerate(self.samplesPerPlate[:self.numberSourcePlates]):
-			if len(definition_source_plate["wells"].keys()) < number_reactions+list(definition_source_plate["wells"].keys()).index(self.firstWellSamplePerPlate[index_plate]):
+			if len(definition_source_plate["wells"].keys()) < number_reactions+definition_source_plate['groups'][0]["wells"].index(self.firstWellSamplePerPlate[index_plate]):
 				raise Exception(f"Having the {self.firstWellSamplePerPlate[index_plate]} as the first well with sample and {number_reactions} wells with sample does not fit in the {self.APINameSamplePlate} labware")
-		
+
 		# Finally, we check that the volume of media or sample to transfer is not 0
 		if self.volumeAntibiotic <= 0 or self.volumeSample <= 0:
 			raise Exception("Neither 'Volume of Sample to Transfer (uL)' or 'Volume of Media to Transfer (uL)' can be lower or equal than 0 ul")
@@ -225,14 +225,7 @@ class SetParameters:
 		# Check if the volumes can be picked with these set of pipettes
 		if self.pipR.min_volume > user_variables.volumeSample or self.pipL.min_volume > user_variables.volumeAntibiotic:
 			raise Exception ("Either the volume 'Volume of Sample to Transfer (uL)' or the volume 'Volume of Media to Transfer (uL)' cannot be picked by the set pipettes, try another set of volumes or pipettes")
-			
-		if user_variables.valueReplaceTiprack.lower() == "true":
-			self.replaceTiprack = True
-		elif user_variables.valueReplaceTiprack.lower() == "false":
-			self.replaceTiprack = False
-		else:
-			raise Exception("Replace Tiprack Variable can only have 2 possible values: True or False")
-		
+
 		# Antibiotic Tubes
 		for antibiotic in user_variables.nameAntibiotics:
 			self.antibioticWells[antibiotic] = {"Positions":[], "Volumes":None, "Reactions Per Tube":None, "Number Total Reactions":0, "Definition Liquid": None}
@@ -532,6 +525,7 @@ metadata = {
 
 def run(protocol:opentrons.protocol_api.ProtocolContext):
 	labware_context = opentrons.protocol_api.labware
+
 	#----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	# Read Variables Excel, define the user and protocol variables and check them for initial errors
 	
@@ -597,7 +591,7 @@ def run(protocol:opentrons.protocol_api.ProtocolContext):
 		for well in program_variables.samplePlates[index_labware]["Opentrons Place"].wells()[program_variables.samplePlates[index_labware]["Index First Well Sample"]:(program_variables.samplePlates[index_labware]["Index First Well Sample"]+program_variables.samplePlates[index_labware]["Number Samples"])]:
 			well.load_liquid(program_variables.liquid_samples, volume = 0.9*vol_max_well_source_labware)
 		
-	# Set the final plates which number has been calculates in the assign_variables method of the clas SettedParameters
+	# Set the final plates which number has been calculates in the assign_variables method of the class SettedParameters
 	# First lets get the labels
 	labels_incubation_plates = []
 	for final_plate in program_variables.incubationPlates.values():
@@ -653,7 +647,11 @@ def run(protocol:opentrons.protocol_api.ProtocolContext):
 		wells_distribute_antibiotic = []
 		for number_plate, plate_incubation in program_variables.incubationPlates.items():
 			if plate_incubation["Antibiotic"] == antibiotic_type:
-				wells_distribute_antibiotic += plate_incubation["Opentrons Place"].wells()[:plate_incubation["Number Samples"]]
+				# Find the first well that needs to be filled
+				row_well_initial = program_variables.samplePlates[plate_incubation["Source Plate"]]["Opentrons Place"].wells()[program_variables.samplePlates[plate_incubation["Source Plate"]]["Index First Well Sample"]]._core._row_name
+				index_row_initial = list(program_variables.samplePlates[plate_incubation["Source Plate"]]["Opentrons Place"].rows_by_name().keys()).index(row_well_initial)
+				# Set the wells to distribute the sample
+				wells_distribute_antibiotic += plate_incubation["Opentrons Place"].wells()[index_row_initial:index_row_initial+plate_incubation["Number Samples"]]
 		for index_tube, tube in enumerate(program_variables.antibioticWells[antibiotic_type]["Reactions Per Tube"]):
 			if len(wells_distribute_antibiotic) <= tube:
 				program_variables.antibioticWells[antibiotic_type]["Volumes"][index_tube] = distribute_z_tracking_falcon15ml (program_variables.pipL,
@@ -673,7 +671,7 @@ def run(protocol:opentrons.protocol_api.ProtocolContext):
 				tube -= len(wells_distribute_antibiotic)
 				
 		program_variables.pipL.drop_tip()
-	
+
 	#----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	# Transfer colonies to different plates
 	for final_plate in program_variables.incubationPlates.values():
