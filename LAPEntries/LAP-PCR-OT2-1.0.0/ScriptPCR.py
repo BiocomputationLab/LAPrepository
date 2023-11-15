@@ -2,9 +2,9 @@
 Python script destined to OT-2
 This script performs a preparation of PCR mix and, optionally, the CPR temperature profile in a thermocycler
 This script needs an excel file attached to perform the running
-For more info go to https://github.com/Biocomputation-CBGP/LAPrepository/tree/main/LAPEntries,
-https://github.com/Biocomputation-CBGP/OT2/tree/main/PCRsamplePreparationand/or
-https://www.protocols.io/view/ot-2-pcr-sample-preparation-protocol-n92ldpyznl5b/v1
+For more info go to https://github.com/BiocomputationLab/LAPrepository/tree/main/LAPEntries,
+https://www.protocols.io/view/ot-2-pcr-sample-preparation-protocol-n92ldpyznl5b and/or
+http://www.laprepo.com
 """
 
 ## Packages needed for the running of the protocol
@@ -45,12 +45,14 @@ class UserVariables:
 		self.APINameEppendorfPlate = general[general["Variable Name"] == "API Name Eppendorf Reagents Rack"]["Value"].values[0]
 		self.APINameTipR = pipettes[pipettes["Variable Name"] == "API Name Tiprack Right Pipette"]["Value"].values[0]
 		self.APINameTipL = pipettes[pipettes["Variable Name"] == "API Name Tiprack Left Pipette"]["Value"].values[0]
-		self.replaceTiprack = pipettes[pipettes["Variable Name"] == "Replace Tipracks"]["Value"].values[0]
+		self.replaceTiprack = str(pipettes[pipettes["Variable Name"] == "Replace Tipracks"]["Value"].values[0])
 		
 		self.positionsControls = list(each_plate[each_plate["Variable Name"] == "Position Controls"].values[0][1:])
 		self.positionsNotPCR = list(each_plate[each_plate["Variable Name"] == "Wells not to perform PCR"].values[0][1:])
 		self.mapID = list(each_plate[each_plate["Variable Name"] == "Map IDs"].values[0][1:])
-		
+		self.nameSourcePlates = list(each_plate.columns)
+		self.nameSourcePlates.remove("Variable Name")
+
 		self.presenceHS = modules[modules["Variable Name"] == "Presence Heater-Shaker"]["Value"].values[0]
 		self.presenceTermo = modules[modules["Variable Name"] == "Presence Thermocycler"]["Value"].values[0]
 		self.finalStateLid = modules[modules["Variable Name"] == "Final Open Lid"]["Value"].values[0]
@@ -87,9 +89,9 @@ class UserVariables:
 			raise Exception("We need at least 1 DNA template plates to perform the protocol")
 
 		# Check all the boolean values ans setting them
-		if str(self.presenceHS).lower() == "true":
+		if str(self.presenceHS).lower() == "true" or self.presenceHS == 1:
 			self.presenceHS = True
-		elif str(self.presenceHS).lower() == "false":
+		elif str(self.presenceHS).lower() == "false"  or self.presenceHS == 0:
 			self.presenceHS = False
 		else:
 			raise Exception ("The variable 'Presence Heater-Shaker' only accepts 2 values, True or False")
@@ -101,9 +103,9 @@ class UserVariables:
 		else:
 			raise Exception ("The variable 'Replace Tipracks' only accepts 2 values, True or False")
 		
-		if str(self.presenceTermo).lower() == "true":
+		if str(self.presenceTermo).lower() == "true" or self.presenceTermo == 1:
 			self.presenceTermo = True
-		elif str(self.presenceTermo).lower() == "false":
+		elif str(self.presenceTermo).lower() == "false" or self.presenceTermo == 0:
 			self.presenceTermo = False
 		else:
 			raise Exception ("The variable 'Presence Thermocycler' only accepts 2 values, True or False")
@@ -166,10 +168,14 @@ class UserVariables:
 			self.rpm = None
 			self.APINameLabwareHS = None
 		
-		# Check that tehre is at least 1 pipette
+		# Check that there is at least 1 pipette
 		if pd.isna(self.APINamePipL) and pd.isna(self.APINamePipR):
 			raise Exception("There must be at least 1 pipette set to perform this protocol")
 		
+		# Check that there are as many columns, at least as the number or source plates
+		if all(len(list) < self.numberSourcePlates for list in [self.samplesPerPlate, self.firstWellSamplePerPlate, self.positionsControls, self.positionsNotPCR, self.mapID]):
+			raise Exception("There should be at least as many columns of source plate values in the sheet SamplesPlateVariables as the number stated in 'Number of Source Plates'")
+
 		# Check if there is some value of the plates where it shouldnt in the per plate sheet
 		if any(pd.isna(elem) == True for elem in self.samplesPerPlate[:self.numberSourcePlates]) or any(pd.isna(elem) == False for elem in self.samplesPerPlate[self.numberSourcePlates:]):
 			raise Exception("The values of 'Number Samples' need to be as many as the 'Number of Source Plates' and in consecutive columns")
@@ -195,6 +201,7 @@ class UserVariables:
 			self.startingTipPipR = None
 			self.APINameTipR = None
 		
+
 		# Check that if the tipracks are the same, the initial tips should be ethe same as well
 		if not pd.isna(self.APINamePipL) and not pd.isna(self.APINamePipR):
 			if self.APINameTipL == self.APINameTipR:
@@ -220,16 +227,21 @@ class UserVariables:
 		if pd.isna(self.APINamePipL) == False and (self.startingTipPipL not in definition_tiprack_left["groups"][0]["wells"]):
 			raise Exception("Starting tip of left pipette is not valid, check for typos")
 		
+		# Check that the initial plate is homogeneous
+		if len(definition_source_plate["groups"]) > 1:
+			raise Exception("The source plate needs to have only 1 type of well, i.e, the labware needs to be homogeneous")
+		
 		# Check if the well of the starting plate exist in the final labware
 		for index_plate, initial_well_source_plate in enumerate(self.firstWellSamplePerPlate[:self.numberSourcePlates]):
-			if initial_well_source_plate not in list(definition_source_plate["wells"].keys()):
+			if initial_well_source_plate not in definition_source_plate["wells"].keys():
 				raise Exception(f"The well '{initial_well_source_plate}' does not exist in the labware {self.APINameSamplePlate}, check for typos")
+			
 			# Check if the number of samples plus the start well can fit in the initial labware
-			if list(definition_source_plate["wells"].keys()).index(initial_well_source_plate) + self.samplesPerPlate[index_plate] > len(definition_source_plate["wells"]):
+			if definition_source_plate["groups"][0]["wells"].index(initial_well_source_plate) + self.samplesPerPlate[index_plate] > len(definition_source_plate["wells"]):
 				raise Exception(f"The Plate {index_plate + 1} has {self.samplesPerPlate[index_plate]} samples starting from the well {initial_well_source_plate}. That does not fit in the labware {self.APINameSamplePlate}")
 		
 		# Check if final start well exists in the final labware
-		if self.wellStartFinalPlate not in list(definition_source_plate["wells"].keys()):
+		if self.wellStartFinalPlate not in definition_source_plate["wells"].keys():
 			raise Exception(f"The well '{self.wellStartFinalPlate}' does not exist in the labware {self.APINameSamplePlate}, check for typos")
 		
 		# Check that the establish controls are in the source labware
@@ -245,7 +257,7 @@ class UserVariables:
 			if not pd.isna(pos_notPCR):
 				not_pcr = pos_notPCR.replace(" ","").split(",")
 				for pos_notPCR in not_pcr:
-					if pos_notPCR not in list(definition_source_plate["wells"].keys()):
+					if pos_notPCR not in definition_source_plate["wells"].keys():
 						raise Exception(f"The well {pos_notPCR} of Plate {index_plate + 1} not in the labware {self.APINameSamplePlate}. Check for typos")
 
 		# Check that the control positions and the wells not to perform are not the same 
@@ -256,7 +268,7 @@ class UserVariables:
 				values_controls = set_control.replace(" ","").split(",")
 				values_not_pcr = set_not_perform.replace(" ","").split(",")
 				if any(well in values_controls for well in values_not_pcr) or any(well in values_not_pcr for well in values_controls):
-					raise Exception("There cannot be a well in both rows 'Position Controls' and 'Wells not to perform PCR' for the same source plate")
+					raise Exception("There cannot be a well in both 'Position Controls' and 'Wells not to perform PCR' variables for the same source plate")
 				
 		# We are going to check that the number of cells in each plate is not larger than the capacity of the source plates
 		for number_plate, number_cells_per_plate in enumerate(self.samplesPerPlate):
@@ -298,7 +310,7 @@ class UserVariables:
 				pass
 			else:
 				try:
-					# map_dataframe = pd.read_excel("VariablesPCR.xlsx", sheet_name = map_name, index_col = 0, engine = "openpyxl")
+					# map_dataframe = pd.read_excel("VariablesPCRSimulation.xlsx", sheet_name = map_name, index_col = 0, engine = "openpyxl")
 					map_dataframe = pd.read_excel("/data/user_storage/VariablesPCR.xlsx", sheet_name = map_name, index_col = 0, engine = "openpyxl")
 				except ValueError: # Error that appears when the sheet 'map_name' does not exist in the excel file
 					raise Exception(f"The map of IDs '{map_name}' does not exist in the Excel file")
@@ -941,7 +953,7 @@ def run(protocol:opentrons.protocol_api.ProtocolContext):
 	#----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	# Read Variables Excel, define the user and protocol variables and check them for initial errors
 	excel_variables = pd.read_excel("/data/user_storage/VariablesPCR.xlsx", sheet_name = None, engine = "openpyxl")
-	# excel_variables = pd.read_excel("VariablesPCR.xlsx", sheet_name = None, engine = "openpyxl")
+	# excel_variables = pd.read_excel("VariablesPCRSimulation.xlsx", sheet_name = None, engine = "openpyxl")
 	# Let's check that the minimal sheets
 	name_sheets = list(excel_variables.keys())
 	
@@ -1031,8 +1043,15 @@ def run(protocol:opentrons.protocol_api.ProtocolContext):
 	
 	# Source Plates
 	# We start settign the source labware which number has been provided
-	
-	labware_source = setting_labware(user_variables.numberSourcePlates, user_variables.APINameSamplePlate, program_variables.deckPositions, protocol, label = "Sample Source Plate")
+	# Get labels of source plates
+	labels = []
+	for index_label, label in enumerate(user_variables.mapID[:user_variables.numberSourcePlates]):
+		if pd.isna(label):
+			labels.append(f"Source Plate '{user_variables.nameSourcePlates[index_label]}'")
+		else:
+			labels.append(f"Source Plate '{label}'")
+
+	labware_source = setting_labware(user_variables.numberSourcePlates, user_variables.APINameSamplePlate, program_variables.deckPositions, protocol, label = labels)
 	program_variables.deckPositions = {**program_variables.deckPositions , **labware_source}
 	
 	# Now we assign each labware position to ther place in the SetteParameters class
@@ -1044,7 +1063,7 @@ def run(protocol:opentrons.protocol_api.ProtocolContext):
 		
 		# Establish the maps of the source plate
 		if not pd.isna(user_variables.mapID[index_labware]):
-			# program_variables.samplePlates[index_labware]["Map Names"] = pd.read_excel("VariablesPCR.xlsx", sheet_name = user_variables.mapID[index_labware], engine = "openpyxl", index_col = 0)
+			# program_variables.samplePlates[index_labware]["Map Names"] = pd.read_excel("VariablesPCRSimulation.xlsx", sheet_name = user_variables.mapID[index_labware], engine = "openpyxl", index_col = 0)
 			program_variables.samplePlates[index_labware]["Map Names"] = pd.read_excel("/data/user_storage/VariablesPCR.xlsx", sheet_name = user_variables.mapID[index_labware], engine = "openpyxl", index_col = 0)
 			program_variables.samplePlates[index_labware]["Map Names"].columns = program_variables.samplePlates[index_labware]["Map Names"].columns.map(str)
 		else:
