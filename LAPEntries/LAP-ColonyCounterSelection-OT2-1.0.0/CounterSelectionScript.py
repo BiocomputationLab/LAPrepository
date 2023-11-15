@@ -2,9 +2,9 @@
 Python script destined to OT-2
 This script performs a creation of final plates selecting samples in base of a criteria
 This script needs an excel file attached to perform the running
-For more info go to https://github.com/Biocomputation-CBGP/LAPrepository/tree/main/LAPEntries,
-https://github.com/Biocomputation-CBGP/OT2/tree/main/ColonySelection and/or
-https://www.protocols.io/view/ot-2-counter-selection-5qpvor5xdv4o/v1
+For more info go to https://github.com/BiocomputationLab/LAPrepository/tree/main/LAPEntries,
+https://www.protocols.io/view/ot-2-counter-selection-5qpvor5xdv4o and/or
+http://www.laprepo.com
 """
 
 ## Packages needed for the running of the protocol
@@ -43,7 +43,7 @@ class UserVariables:
 		self.startingTipPipL = pipettes[pipettes["Variable Names"] == "Initial Tip Left Pipette"]["Value"].values[0]
 		self.APINameTipR = pipettes[pipettes["Variable Names"] == "API Name Tiprack Right Pipette"]["Value"].values[0]
 		self.APINameTipL = pipettes[pipettes["Variable Names"] == "API Name Tiprack Left Pipette"]["Value"].values[0]
-		self.replaceTiprack = pipettes[pipettes["Variable Names"] == "Replace Tipracks"]["Value"].values[0]
+		self.replaceTiprack = str(pipettes[pipettes["Variable Names"] == "Replace Tipracks"]["Value"].values[0])
 		
 		self.threshold = list(each_plate[each_plate["Variable Names"] == "Threshold Selection Value"].values[0][1:])
 		self.reactivesPerPlate = list(each_plate[each_plate["Variable Names"] == "Reactives Per Plate"].values[0][1:])
@@ -55,6 +55,7 @@ class UserVariables:
 		self.volumesSamplesPerPlate = list(each_plate[each_plate["Variable Names"] == "Volume Transfer Sample (uL)"].values[0][1:])
 		self.nameSourcePlates = list(each_plate.columns)
 		self.nameSourcePlates.remove("Variable Names")
+		
 		return
 		
 	def check(self, protocol):
@@ -112,22 +113,39 @@ class UserVariables:
 		
 		try:
 			definition_source_plate = labware_context.get_labware_definition(self.APINameSamplePlate)
-			definition_final_plate = labware_context.get_labware_definition(self.APINameFinalPlate)
-			if self.nameReactives != None:	
-				definition_rack = labware_context.get_labware_definition(self.APINameFalconPlate)
-			if pd.isna(self.APINamePipR) == False:
-				definition_tiprack_right = labware_context.get_labware_definition(self.APINameTipR)
-			if pd.isna(self.APINamePipL) == False:
-				definition_tiprack_left = labware_context.get_labware_definition(self.APINameTipL)
 		except OSError: # This would be catching the FileNotFoundError that happens when a labware is not found
 			raise Exception("One or more of the introduced labwares or tipracks are not in the labware directory of the opentrons. Check for any typo of the api labware name.")
 		
+		try:
+			definition_final_plate = labware_context.get_labware_definition(self.APINameFinalPlate)
+		except OSError:
+			raise Exception(f"The final plate labware {self.APINameFinalPlate} is not in the opentrons labware space so it cannot be defined. Check for any typo of the api labware name or that the labware is in the Opentrons App.")
+
+		if self.nameReactives != None:
+			try:
+				definition_rack = labware_context.get_labware_definition(self.APINameFalconPlate)
+			except OSError:
+				raise Exception(f"The 15mL falcon tube rack labware {self.APINameFalconPlate} is not in the opentrons labware space so it cannot be defined. Check for any typo of the api labware name or that the labware is in the Opentrons App.")
+
+		if pd.isna(self.APINamePipR) == False:
+			try:
+				definition_tiprack_right = labware_context.get_labware_definition(self.APINameTipR)
+			except OSError:
+				raise Exception(f"The right tip rack {self.APINameTipR} is not in the opentrons labware space so it cannot be defined. Check for any typo of the api labware name or that the labware is in the Opentrons App.")
+		
+
+		if pd.isna(self.APINamePipL) == False:
+			try:
+				definition_tiprack_left = labware_context.get_labware_definition(self.APINameTipL)
+			except OSError:
+				raise Exception(f"The left tip rack {self.APINameTipL} is not in the opentrons labware space so it cannot be defined. Check for any typo of the api labware name or that the labware is in the Opentrons App.")
+
 		# Check that the number of source plates is at least 1
 		if self.numberSourcePlates < 1:
 			raise Exception("The variable 'Number of Source Plates' needs to be equal or greater than 1")
 
 		# Check if there is some value of the plates where it shouldnt in the per plate sheet
-		if len(self.threshold) < (self.numberSourcePlates + 1) or len(self.nameSheetLowerThreshold) < (self.numberSourcePlates + 1) or len(self.nameSheetHigherThreshold) < (self.numberSourcePlates + 1) or len(self.reactivesPerPlate) < (self.numberSourcePlates + 1) or len(self.wellStartFinalPlate) < (self.numberSourcePlates + 1) or len(self.finalMapName) < (self.numberSourcePlates + 1) or len(self.volumesSamplesPerPlate) < (self.numberSourcePlates + 1):
+		if len(self.threshold) < (self.numberSourcePlates) or len(self.nameSheetLowerThreshold) < (self.numberSourcePlates) or len(self.nameSheetHigherThreshold) < (self.numberSourcePlates) or len(self.reactivesPerPlate) < (self.numberSourcePlates) or len(self.wellStartFinalPlate) < (self.numberSourcePlates) or len(self.finalMapName) < (self.numberSourcePlates) or len(self.volumesSamplesPerPlate) < (self.numberSourcePlates):
 			raise Exception("We need to have at least the same number of plate columns on the Sheet 'PerPlateVariables' as in 'Number of Source Plates'")
 		
 		if any(pd.isna(elem) == True for elem in self.threshold[:self.numberSourcePlates]) or any(pd.isna(elem) == False for elem in self.threshold[self.numberSourcePlates:]):
@@ -156,7 +174,7 @@ class UserVariables:
 		# Check if the sheet names for the selection values exist and if they fit the labware source description
 		for sheet_name_lowerThreshold in self.nameSheetLowerThreshold[:self.numberSourcePlates]:
 			try:
-				# values_lower = pd.read_excel("VariablesCounterSelection.xlsx", sheet_name = sheet_name_lowerThreshold, engine = "openpyxl", header = None)
+				# values_lower = pd.read_excel("VariablesCounterSelectionSimulation.xlsx", sheet_name = sheet_name_lowerThreshold, engine = "openpyxl", header = None)
 				values_lower = pd.read_excel("/data/user_storage/VariablesCounterSelection.xlsx", sheet_name = sheet_name_lowerThreshold, engine = "openpyxl", header = None)
 			except ValueError: # Error that appears when the sheet 'sheet_name_lowerThreshold' does not exist in the excel file
 				raise Exception(f"The Sheet Name {sheet_name_lowerThreshold} does not exist in excel file")
@@ -172,7 +190,7 @@ class UserVariables:
 			
 		for sheet_name_higherThreshold in self.nameSheetHigherThreshold[:self.numberSourcePlates]:
 			try:
-				# values_higher = pd.read_excel("VariablesCounterSelection.xlsx", sheet_name = sheet_name_higherThreshold, engine = "openpyxl", header = None)
+				# values_higher = pd.read_excel("VariablesCounterSelectionSimulation.xlsx", sheet_name = sheet_name_higherThreshold, engine = "openpyxl", header = None)
 				values_higher = pd.read_excel("/data/user_storage/VariablesCounterSelection.xlsx", sheet_name = sheet_name_higherThreshold, engine = "openpyxl", header = None)
 			except ValueError: # Error that appears when the sheet 'sheet_name_higherThreshold' does not exist in the excel file
 				raise Exception(f"The Sheet Name {sheet_name_higherThreshold} does not exist in excel file")
@@ -216,9 +234,11 @@ class UserVariables:
 			if all(antibiotic in self.nameReactives for antibiotic in all_plates_media) == False:
 				raise Exception(f"Following reactive(s) are not defined in variable 'Name Reactives': {set(all_plates_media)-set(self.nameReactives)}")
 			if all(antibiotic in all_plates_media for antibiotic in self.nameReactives) == False:
-				raise Exception(f"Following reactive(s) are not being used: {set(self.nameReactives)-set(all_plates_media)}")
+				raise Exception(f"Following reactive(s) are not being used: {set(self.nameReactives)-set(all_plates_media)}. Remove it from the variable file and re-run the script")
 		
-		return
+		# Check the falcon tube rack is only composed by 15mL falcons
+		if len(definition_rack["groups"]) > 1:
+			raise Exception("The falcon rack needs to have only 1 type of tube admitted, tipracks such as 'Opentrons 10 Tube Rack with Falcon 4x50 mL, 6x15 mL Conical' is not valid")
 	
 class SettedParameters:
 	
@@ -286,8 +306,8 @@ class SettedParameters:
 											  "Opentrons Place":None,
 											  "Values for Selection (Lower than Threshold)":pd.read_excel("/data/user_storage/VariablesCounterSelection.xlsx", sheet_name = user_variables.nameSheetLowerThreshold[index_plate], engine = "openpyxl", header = None),
 											  "Values for Selection (Greater than Threshold)":pd.read_excel("/data/user_storage/VariablesCounterSelection.xlsx", sheet_name = user_variables.nameSheetHigherThreshold[index_plate], engine = "openpyxl", header = None),
-											#   "Values for Selection (Lower than Threshold)":pd.read_excel("VariablesCounterSelection.xlsx", sheet_name = user_variables.nameSheetLowerThreshold[index_plate], engine = "openpyxl", header = None),
-											#   "Values for Selection (Greater than Threshold)":pd.read_excel("VariablesCounterSelection.xlsx", sheet_name = user_variables.nameSheetHigherThreshold[index_plate], engine = "openpyxl", header = None),
+											#   "Values for Selection (Lower than Threshold)":pd.read_excel("VariablesCounterSelectionSimulation.xlsx", sheet_name = user_variables.nameSheetLowerThreshold[index_plate], engine = "openpyxl", header = None),
+											#   "Values for Selection (Greater than Threshold)":pd.read_excel("VariablesCounterSelectionSimulation.xlsx", sheet_name = user_variables.nameSheetHigherThreshold[index_plate], engine = "openpyxl", header = None),
 											  "Threshold Value":user_variables.threshold[index_plate],
 											  "Map Selected Colonies":None, # We will create this map when we establish the final plates
 											  "Name Final Map":user_variables.finalMapName[index_plate],
@@ -640,7 +660,7 @@ def run(protocol:opentrons.protocol_api.ProtocolContext):
 	# Read Variables Excel, define the user and protocol variables and check them for initial errors
 	
 	excel_variables = pd.read_excel("/data/user_storage/VariablesCounterSelection.xlsx", sheet_name = None, engine = "openpyxl")
-	# excel_variables = pd.read_excel("VariablesCounterSelection.xlsx", sheet_name = None, engine = "openpyxl")
+	# excel_variables = pd.read_excel("VariablesCounterSelectionSimulation.xlsx", sheet_name = None, engine = "openpyxl")
 	
 	# Let's check that the minimal sheets
 	name_sheets = list(excel_variables.keys())
