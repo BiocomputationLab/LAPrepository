@@ -33,14 +33,13 @@ class UserVariables:
 		self.volumeSample = list(each_plate[each_plate["Variable Names"] == "Volume Transfer Sample (uL)"].values[0][1:])
 		self.APINamePipR = pipettes[pipettes["Variable Names"] == "API Name Right Pipette"]["Value"].values[0]
 		self.APINamePipL = pipettes[pipettes["Variable Names"] == "API Name Left Pipette"]["Value"].values[0]
-		self.replaceTiprack = pipettes[pipettes["Variable Names"] == "Replace Tipracks"]["Value"].values[0]
+		self.replaceTiprack = str(pipettes[pipettes["Variable Names"] == "Replace Tipracks"]["Value"].values[0])
 		
 		self.startingTipPipR = pipettes[pipettes["Variable Names"] == "Initial Tip Right Pipette"]["Value"].values[0]
 		self.startingTipPipL = pipettes[pipettes["Variable Names"] == "Initial Tip Left Pipette"]["Value"].values[0]
 		self.APINameSamplePlate = general[general["Variable Names"] == "API Name Source Plate"]["Value"].values[0]
 		self.APINameFinalPlate = general[general["Variable Names"] == "API Name Final Plate"]["Value"].values[0]
 		self.APINameFalconPlate = general[general["Variable Names"] == "API Name Rack 15mL Falcon Reactives"]["Value"].values[0]
-		self.valueReplaceTiprack = pipettes[pipettes["Variable Names"] == "Replace Tipracks"]["Value"].values[0]
 		self.APINameTipR = pipettes[pipettes["Variable Names"] == "API Name Tiprack Right Pipette"]["Value"].values[0]
 		self.APINameTipL = pipettes[pipettes["Variable Names"] == "API Name Tiprack Left Pipette"]["Value"].values[0]
 
@@ -175,20 +174,20 @@ class UserVariables:
 		
 		for index_plate, first_well in enumerate(self.firstWellSamplePerPlate[:self.numberSourcePlates]):
 			# Check the first well + number samples to take is not > number wells
-			if (list(definition_source_plate["wells"]).index(first_well) + self.numberSamplesTake[index_plate] > len(definition_source_plate["wells"])):
+			if (definition_source_plate["groups"][0]["wells"].index(first_well) + self.numberSamplesTake[index_plate] > len(definition_source_plate["wells"])):
 				raise Exception(f"Plate {index_plate + 1} cannot start with {first_well} and take {self.numberSamplesTake[index_plate]} samples")
 		
 		# Check the maps sheets exist
 		for map_name in self.nameSheetNameSamples[:self.numberSourcePlates]:
 			try:
-				map_names = pd.read_excel("/data/user_storage/VariablesMergeSamples.xlsx", engine="openpyxl", sheet_name = map_name, header = None)
-				# map_names = pd.read_excel("VariablesMergeSamples.xlsx", engine="openpyxl", sheet_name = map_name, header = None)
+				map_names = pd.read_excel("/data/user_storage/VariablesMergeSamples.xlsx", engine="openpyxl", sheet_name = map_name, index_col=0)
+				# map_names = pd.read_excel("VariablesMergeSamplesSimulation.xlsx", engine="openpyxl", sheet_name = map_name, index_col=0)
 			except ValueError: # Error that appears when the sheet 'map_name' does not exist in the excel file
 				raise Exception(f"Sheet name of the Map {map_name} does not exist in the excel")
 			
 			# Check it has the columns and rows according to the labware, less or equal than the labware
-			if map_names.shape[0] > len(definition_source_plate["ordering"][0]) or map_names.shape[1] > len(definition_source_plate["ordering"]):
-				raise Exception(f"Map {map_name} should have equal or less columns and rows than the labware {self.APINameSamplePlate}. Maps should not have the names of rows and columns, only the values")
+			if map_names.shape[0] != len(definition_source_plate["ordering"][0]) or map_names.shape[1] != len(definition_source_plate["ordering"]):
+				raise Exception(f"The Sheet '{map_name}' needs to have the same columns and rows as the labware '{self.APINameSamplePlate}'. If there is no part in a position, leave cell empty.\nThe name of the rows and columns should be included in the sheet.")
 		return
 
 class SettedParameters:
@@ -219,11 +218,6 @@ class SettedParameters:
 		if pd.isna(user_variables.APINamePipR) == False:
 			self.pipR = protocol.load_instrument(user_variables.APINamePipR, mount = "right")
 		
-		if user_variables.valueReplaceTiprack.lower() == "true":
-			self.replaceTiprack = True
-		elif user_variables.valueReplaceTiprack.lower() == "false":
-			self.replaceTiprack = False
-		
 		if user_variables.APINameTipR == user_variables.APINameTipL:
 			self.sameTipRack = True
 		else:
@@ -246,8 +240,7 @@ class SettedParameters:
 		number_wells_final_plate = len(opentrons.protocol_api.labware.get_labware_definition(user_variables.APINameFinalPlate)["wells"])
 		number_source_needed = math.ceil((opentrons.protocol_api.labware.get_labware_definition(user_variables.APINameFinalPlate)["groups"][0]["wells"].index(user_variables.wellStartFinalPlate)+self.sumSamples)/number_wells_final_plate)
 		for index_plate in range(number_source_needed):
-			self.finalPlates[index_plate] = {"Source Plate":index_plate,
-											"Position":None,
+			self.finalPlates[index_plate] = {"Position":None,
 											"Label":f"Selected Samples Plate {index_plate+1}",
 											"Opentrons Place":None,
 											"Map Selected Samples":None # We will create this map when we establish the final plate
@@ -260,8 +253,8 @@ class SettedParameters:
 											  "Label":f"Source Plate {index_plate+1}",
 											  "Opentrons Place":None,
 											  "Index First Well Sample": opentrons.protocol_api.labware.get_labware_definition(user_variables.APINameSamplePlate)["groups"][0]["wells"].index(user_variables.firstWellSamplePerPlate[index_plate]),
-											  "Map Identities": pd.read_excel("/data/user_storage/VariablesMergeSamples.xlsx", sheet_name = user_variables.nameSheetNameSamples[index_plate], engine = "openpyxl", header = None),
-											#   "Map Identities": pd.read_excel("VariablesMergeSamples.xlsx", sheet_name = user_variables.nameSheetNameSamples[index_plate], engine = "openpyxl", header = None),
+											  "Map Identities": pd.read_excel("/data/user_storage/VariablesMergeSamples.xlsx", sheet_name = user_variables.nameSheetNameSamples[index_plate], engine = "openpyxl", index_col=0),
+											#   "Map Identities": pd.read_excel("VariablesMergeSamplesSimulation.xlsx", sheet_name = user_variables.nameSheetNameSamples[index_plate], engine = "openpyxl", index_col = 0),
 											  "Selected Samples": [], # When we define the labware we will fill this value
 											  "Type Selection": user_variables.sampleSelection[index_plate].lower(),
 											  "Volume Sample Transfer":user_variables.volumeSample[index_plate]}
@@ -610,7 +603,7 @@ def run(protocol:opentrons.protocol_api.ProtocolContext):
 	# Read Variables Excel, define the user and protocol variables and check them for initial errors
 	# Read Excel
 	excel_variables = pd.read_excel("/data/user_storage/VariablesMergeSamples.xlsx", sheet_name = None, engine = "openpyxl")
-	# excel_variables = pd.read_excel("VariablesMergeSamples.xlsx", sheet_name = None, engine = "openpyxl")
+	# excel_variables = pd.read_excel("VariablesMergeSamplesSimulation.xlsx", sheet_name = None, engine = "openpyxl")
 	# Let's check that the minimal sheets
 	name_sheets = list(excel_variables.keys())
 
@@ -677,6 +670,7 @@ def run(protocol:opentrons.protocol_api.ProtocolContext):
 		list_wells_possible_selection = source_plate["Opentrons Place"].wells()[source_plate["Index First Well Sample"]:]
 		# Obtain the list of well we cannot select from, which are the ones that have the "-" character
 		wells_not_take = source_plate['Map Identities'].isnull().stack()
+
 		# Remove from list_wells_possible_selection the list wells_not_take
 		for well in wells_not_take.index:
 			if wells_not_take[well] and source_plate["Opentrons Place"].wells_by_name()[f"{well[0]}{well[1]}"] in list_wells_possible_selection:
@@ -686,17 +680,18 @@ def run(protocol:opentrons.protocol_api.ProtocolContext):
 			raise Exception (f"Not enough wells in Plate {index_initial_plate+1} to choose from to take {source_plate['Number Samples Transfer']} samples")
 		
 		source_plate["Selected Samples"] = wells_selection(list(list_wells_possible_selection), source_plate["Number Samples Transfer"], source_plate["Type Selection"])
-		
-		# Let's put volume in the wells that have somethign different to '-'
+
+		# Let's put volume in the wells that have somethign in the cell
 		all_wells_with_samples = ~source_plate['Map Identities'].isnull().stack()
 		for well in all_wells_with_samples.index:
 			if all_wells_with_samples[well]:
 				source_plate["Opentrons Place"][f"{well[0]}{well[1]}"].load_liquid(liquid = program_variables.liquid_samples, volume = 0.9*list(labware_context.get_labware_definition(user_variables.APINameSamplePlate)["wells"].values())[0]['totalLiquidVolume'])
-	
+
+
 	# Set the maps of the final labware
 	for index_final_plate, final_plate in program_variables.finalPlates.items():
 		final_plate["Map Selected Samples"] = MapLabware(final_plate["Opentrons Place"])
-		
+	
 	#----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	# Set Falcon Rack if needed
 	if user_variables.volumeReactive != 0:
@@ -730,8 +725,9 @@ def run(protocol:opentrons.protocol_api.ProtocolContext):
 	final_wells = []
 	for plate in list(program_variables.finalPlates.values()):
 		final_wells += plate["Opentrons Place"].wells()
-	index_start_well_final_plate = labware_context.get_labware_definition(user_variables.APINameFinalPlate)["groups"][0]["wells"].index(user_variables.wellStartFinalPlate)
 	
+	# Get the first well that is free in the final
+	index_start_well_final_plate = labware_context.get_labware_definition(user_variables.APINameFinalPlate)["groups"][0]["wells"].index(user_variables.wellStartFinalPlate)
 	
 	# Distribute reactives
 	if user_variables.volumeReactive != 0:
@@ -745,6 +741,7 @@ def run(protocol:opentrons.protocol_api.ProtocolContext):
 		
 		check_tip_and_pick(optimal_pipette, tiprack, program_variables.deckPositions, protocol, replace_tiprack = user_variables.replaceTiprack, initial_tip = starting_tip, same_tiprack = program_variables.sameTipRack)
 		wells_distribute_reactive = final_wells[index_start_well_final_plate:index_start_well_final_plate+program_variables.sumSamples]
+		
 		for index_tube, tube in enumerate(program_variables.reactiveWells["Reactions Per Tube"]):
 			if len(wells_distribute_reactive) <= tube:
 				program_variables.reactiveWells["Volumes"][index_tube] = distribute_z_tracking_falcon15ml (optimal_pipette,
@@ -764,7 +761,9 @@ def run(protocol:opentrons.protocol_api.ProtocolContext):
 		optimal_pipette.drop_tip()
 		
 	# Distribute Samples
+	
 	wells_transfer_samples = generator_positions(final_wells[index_start_well_final_plate:index_start_well_final_plate+program_variables.sumSamples])
+	
 	for plate in list(program_variables.samplePlates.values()):
 		optimal_pipette = give_me_optimal_pipette (plate["Volume Sample Transfer"], program_variables.pipR, program_variables.pipL)
 		if optimal_pipette.mount == "right":
@@ -780,6 +779,7 @@ def run(protocol:opentrons.protocol_api.ProtocolContext):
 			optimal_pipette.transfer(plate["Volume Sample Transfer"], sample_well, final_well, new_tip="never")
 			# Map the transfer
 			source_well_name = plate["Map Identities"].iloc[list(plate["Opentrons Place"].rows_by_name().keys()).index(sample_well._core._row_name),list(plate["Opentrons Place"].columns_by_name().keys()).index(sample_well._core._column_name)]
+
 			for final_plate in list(program_variables.finalPlates.values()):
 				if final_plate["Opentrons Place"] == final_well._parent:
 					final_plate["Map Selected Samples"].assign_value(source_well_name, final_well._core._row_name, final_well._core._column_name)
