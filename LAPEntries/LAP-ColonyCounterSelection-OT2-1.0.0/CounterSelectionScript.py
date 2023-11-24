@@ -160,8 +160,8 @@ class UserVariables:
 			raise Exception("The cell values of 'Well Start Final Plate' need to be as many as the 'Number of Source Plates' and be in consecutive columns")
 		if any(pd.isna(elem) == True for elem in self.finalMapName[:self.numberSourcePlates]) or any(pd.isna(elem) == False for elem in self.finalMapName[self.numberSourcePlates:]):
 			raise Exception("The cell values of 'Final Map Name' need to be as many as the 'Number of Source Plates' and be in consecutive columns")
-		if any(pd.isna(elem) == False for elem in self.volumesSamplesPerPlate[self.numberSourcePlates:]):
-			raise Exception("The cell values of 'Volume Transfer Sample (uL)' cannot be more than the 'Number of Source Plates'")
+		if any(pd.isna(elem) == True for elem in self.volumesSamplesPerPlate[:self.numberSourcePlates]) or any(pd.isna(elem) == False for elem in self.volumesSamplesPerPlate[self.numberSourcePlates:]):
+			raise Exception("The cell values of 'Volume Transfer Sample (uL)' need to be as many as the 'Number of Source Plates' and be in consecutive columns")
 		
 		# Check that the volume that transfer of samples is not 0
 		if any(elem <= 0 for elem in self.volumesSamplesPerPlate[:self.numberSourcePlates]):
@@ -237,7 +237,7 @@ class UserVariables:
 				raise Exception(f"Following reactive(s) are not being used: {set(self.nameReactives)-set(all_plates_media)}. Remove it from the variable file and re-run the script")
 		
 		# Check the falcon tube rack is only composed by 15mL falcons
-		if len(definition_rack["groups"]) > 1:
+		if self.nameReactives != None and len(definition_rack["groups"]) > 1:
 			raise Exception("The falcon rack needs to have only 1 type of tube admitted, tipracks such as 'Opentrons 10 Tube Rack with Falcon 4x50 mL, 6x15 mL Conical' is not valid")
 	
 class SettedParameters:
@@ -324,7 +324,7 @@ class SettedParameters:
 														   "Medium":None,
 														   "Number Samples":None, # We will have to select and see how many
 														   "Opentrons Place":None,
-														   "Index Well Start":list(opentrons.protocol_api.labware.get_labware_definition(user_variables.APINameFinalPlate)["wells"].keys()).index(user_variables.wellStartFinalPlate[index_plate])}
+														   "Index Well Start":opentrons.protocol_api.labware.get_labware_definition(user_variables.APINameFinalPlate)["groups"][0]["wells"].index(user_variables.wellStartFinalPlate[index_plate])}
 				incubation_plates_needed += 1
 				
 			else:
@@ -336,7 +336,7 @@ class SettedParameters:
 															   "Medium":reactive_source_plate,
 															   "Number Samples":None, # We will have to select and see how many
 															   "Opentrons Place":None,
-															   "Index Well Start":list(opentrons.protocol_api.labware.get_labware_definition(user_variables.APINameFinalPlate)["wells"].keys()).index(user_variables.wellStartFinalPlate[index_plate])}
+															   "Index Well Start":opentrons.protocol_api.labware.get_labware_definition(user_variables.APINameFinalPlate)["groups"][0]["wells"].index(user_variables.wellStartFinalPlate[index_plate])}
 					incubation_plates_needed += 1
 				
 		return
@@ -698,7 +698,7 @@ def run(protocol:opentrons.protocol_api.ProtocolContext):
 	user_variables.check(protocol)
 	program_variables = SettedParameters(len(protocol.deck))
 	program_variables.assign_variables(user_variables, protocol)
-	
+
 	#----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	# Set the source and final plates because we know how much we have of both
 	# Get the labels for the source plates
@@ -748,7 +748,8 @@ def run(protocol:opentrons.protocol_api.ProtocolContext):
 	for labware_final in program_variables.finalPlates.values():
 		if labware_final["Medium"] != None:
 			program_variables.reactiveWells[labware_final["Medium"]]["Number Total Reactions"] += len(program_variables.samplePlates[labware_final["Source Plate"]]["Selected Colonies"])
-			labware_final["Number Samples"] = len(program_variables.samplePlates[labware_final["Source Plate"]]["Selected Colonies"])
+		# This number is needed for both when there is no medium and when it is
+		labware_final["Number Samples"] = len(program_variables.samplePlates[labware_final["Source Plate"]]["Selected Colonies"])
 
 
 	# We need to know the max reactive tube volume
@@ -839,7 +840,7 @@ def run(protocol:opentrons.protocol_api.ProtocolContext):
 		# Create the possible positions generator
 		for final_plate in program_variables.finalPlates.values():
 			if final_plate["Source Plate"] == index_source:
-				wells_generator.append(generator_positions (final_plate["Opentrons Place"].wells()))
+				wells_generator.append(generator_positions(final_plate["Opentrons Place"].wells()[final_plate["Index Well Start"]:final_plate["Index Well Start"]+final_plate["Number Samples"]]))
 		
 		for colony_transfer in source_plate["Selected Colonies"]: # each item is [index_rows, index_column]
 			check_tip_and_pick(optimal_pipette, tiprack, program_variables.deckPositions, protocol,  replace_tiprack = user_variables.replaceTiprack, initial_tip = starting_tip, same_tiprack = program_variables.sameTiprack)
