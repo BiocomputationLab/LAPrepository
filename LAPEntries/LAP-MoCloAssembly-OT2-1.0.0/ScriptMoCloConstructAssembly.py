@@ -54,7 +54,7 @@ class UserVariables:
 		self.startingTipPipL = pipettes[pipettes["Variable Names"] == "Initial Tip Left Pipette"]["Value"].values[0]
 		self.APINameTipR = pipettes[pipettes["Variable Names"] == "API Name Tiprack Right Pipette"]["Value"].values[0]
 		self.APINameTipL = pipettes[pipettes["Variable Names"] == "API Name Tiprack Left Pipette"]["Value"].values[0]
-		self.replaceTiprack = pipettes[pipettes["Variable Names"] == "Replace Tipracks"]["Value"].values[0]
+		self.replaceTiprack = str(pipettes[pipettes["Variable Names"] == "Replace Tipracks"]["Value"].values[0])
 
 		# Temperature profile, in case it needs it
 		if isinstance(profile, pd.DataFrame):
@@ -126,9 +126,9 @@ class UserVariables:
 			if pd.isna(self.APINameLabwareHS) or pd.isna(self.rpm):
 				raise Exception("If heater-shaker is present there are 2 variables which cannot be left empty: 'RPM Heater-Shaker' and 'API Name Heater-Shaker Labware'")
 		
-		if str(self.replaceTiprack).lower() == "true":
+		if self.replaceTiprack.lower() == "true":
 			self.replaceTiprack = True
-		elif str(self.replaceTiprack).lower() == "false":
+		elif self.replaceTiprack.lower() == "false":
 			self.replaceTiprack = False
 		else:
 			raise Exception ("The variable 'Replace Tipracks' only accepts 2 values, True or False")
@@ -225,13 +225,13 @@ class UserVariables:
 			raise Exception("The values of 'Name Map DNA Parts' need to be as many as the 'Number DNA Parts Plates' and be in consecutive columns")
 		
 		# Check if there is any typo in the starting tip of both pipettes
-		if pd.isna(self.APINamePipR) == False and (self.startingTipPipR not in definition_tiprack_right["groups"][0]["wells"]):
+		if pd.isna(self.APINamePipR) == False and (self.startingTipPipR not in definition_tiprack_right["wells"].keys()):
 			raise Exception("Starting tip of right pipette is not valid, check for typos")
-		if pd.isna(self.APINamePipL) == False and (self.startingTipPipL not in definition_tiprack_left["groups"][0]["wells"]):
+		if pd.isna(self.APINamePipL) == False and (self.startingTipPipL not in definition_tiprack_left["wells"].keys()):
 			raise Exception("Starting tip of left pipette is not valid, check for typos")
 		
 		# Check if there is a typo in the first destination well
-		if self.wellStartFinalPlate not in definition_final_plate["groups"][0]["wells"]:
+		if self.wellStartFinalPlate not in definition_final_plate["wells"].keys():
 			raise Exception(f"The variable 'Well Start Final Labware' {self.wellStartFinalPlate} does not exist in {self.APINameFinalPlate}")
 		
 		# Check all the sheets that are stated in the 'Per Plate Variables' exist and it follows exactly the same names as the labware set in 'API Name Labware DNA Constructs'
@@ -239,7 +239,7 @@ class UserVariables:
 		for index_map, name_map in enumerate(self.nameSheetMapParts[:self.numberSourcePlates]):
 			try:
 				map_content = pd.read_excel('/data/user_storage/VariablesMoCloAssembly.xlsx', sheet_name = name_map, index_col=0, engine = "openpyxl")
-				# map_content = pd.read_excel('VariablesMoCloAssembly.xlsx', sheet_name = name_map, index_col=0, engine = "openpyxl")
+				# map_content = pd.read_excel('VariablesMoCloAssemblySimulation.xlsx', sheet_name = name_map, index_col=0, engine = "openpyxl")
 			except ValueError: # Error that appears when the sheet 'name_map' does not exist in the excel file
 				raise Exception(f"The Sheet '{name_map}' does not exist in the file 'VariablesMoCloAssembly.xlsx'")
 			
@@ -979,7 +979,7 @@ def run(protocol:opentrons.protocol_api.ProtocolContext):
 	# Read Variables Excel, define the user and protocol variables and check them for initial errors
 	# Read Excel
 	excel_variables = pd.read_excel("/data/user_storage/VariablesMoCloAssembly.xlsx", sheet_name = None, engine = "openpyxl")
-	# excel_variables = pd.read_excel("VariablesMoCloAssembly.xlsx", sheet_name = None, engine = "openpyxl")
+	# excel_variables = pd.read_excel("VariablesMoCloAssemblySimulation.xlsx", sheet_name = None, engine = "openpyxl")
 	# Let's check that the minimal sheets
 	name_sheets = list(excel_variables.keys())
 
@@ -1104,7 +1104,7 @@ def run(protocol:opentrons.protocol_api.ProtocolContext):
 		program_variables.samplePlates[index_labware]["Position"] = labware[0]
 		program_variables.samplePlates[index_labware]["Opentrons Place"] = labware[1]
 		program_variables.samplePlates[index_labware]['Map Names'] = pd.read_excel("/data/user_storage/VariablesMoCloAssembly.xlsx", sheet_name = user_variables.nameSheetMapParts[index_labware], index_col = 0, engine = "openpyxl")
-		# program_variables.samplePlates[index_labware]['Map Names'] = pd.read_excel("VariablesMoCloAssembly.xlsx", sheet_name = user_variables.nameSheetMapParts[index_labware], index_col = 0, engine = "openpyxl")
+		# program_variables.samplePlates[index_labware]['Map Names'] = pd.read_excel("VariablesMoCloAssemblySimulation.xlsx", sheet_name = user_variables.nameSheetMapParts[index_labware], index_col = 0, engine = "openpyxl")
 		program_variables.samplePlates[index_labware]['Map Volumes'] = pd.DataFrame(0, index = list(program_variables.samplePlates[index_labware]["Opentrons Place"].rows_by_name().keys()), columns = list(program_variables.samplePlates[index_labware]["Opentrons Place"].columns_by_name().keys()))
 		program_variables.samplePlates[index_labware]['Map Liquid Definitions'] = pd.DataFrame(np.nan, index = list(program_variables.samplePlates[index_labware]["Opentrons Place"].rows_by_name().keys()), columns = list(program_variables.samplePlates[index_labware]["Opentrons Place"].columns_by_name().keys()))
 		
