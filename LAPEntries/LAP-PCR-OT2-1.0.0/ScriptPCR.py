@@ -201,7 +201,6 @@ class UserVariables:
 			self.startingTipPipR = None
 			self.APINameTipR = None
 		
-
 		# Check that if the tipracks are the same, the initial tips should be ethe same as well
 		if not pd.isna(self.APINamePipL) and not pd.isna(self.APINamePipR):
 			if self.APINameTipL == self.APINameTipR:
@@ -222,9 +221,9 @@ class UserVariables:
 			raise Exception("One or more of the introduced labwares or tipracks are not in the labware directory of the opentrons. Check for any typo of the api labware name.")
 		
 		# Check if there is any typo in the starting tip of both pipettes
-		if pd.isna(self.APINamePipR) == False and (self.startingTipPipR not in definition_tiprack_right["groups"][0]["wells"]):
+		if pd.isna(self.APINamePipR) == False and (self.startingTipPipR not in definition_tiprack_right["wells"].keys()):
 			raise Exception("Starting tip of right pipette is not valid, check for typos")
-		if pd.isna(self.APINamePipL) == False and (self.startingTipPipL not in definition_tiprack_left["groups"][0]["wells"]):
+		if pd.isna(self.APINamePipL) == False and (self.startingTipPipL not in definition_tiprack_left["wells"].keys()):
 			raise Exception("Starting tip of left pipette is not valid, check for typos")
 		
 		# Check that the initial plate is homogeneous
@@ -244,21 +243,29 @@ class UserVariables:
 		if self.wellStartFinalPlate not in definition_source_plate["wells"].keys():
 			raise Exception(f"The well '{self.wellStartFinalPlate}' does not exist in the labware {self.APINameSamplePlate}, check for typos")
 		
-		# Check that the establish controls are in the source labware
+		# Check that the establish controls are in the source labware and inside of the established samples
 		for index_plate, pos_controls in enumerate(self.positionsControls[:self.numberSourcePlates]):
+			index_first_well = definition_source_plate["groups"][0]["wells"].index(self.firstWellSamplePerPlate[index_plate])
+			wells_with_samples = definition_source_plate["groups"][0]["wells"][index_first_well:index_first_well+self.samplesPerPlate[index_plate]]
 			if not pd.isna(pos_controls):
 				controls = pos_controls.replace(" ","").split(",")
 				for pos_control in controls:
 					if pos_control not in list(definition_source_plate["wells"].keys()):
 						raise Exception(f"The control position {pos_control} of Plate {index_plate + 1} not in the labware {self.APINameSamplePlate}. Check for typos")
+					if pos_control not in wells_with_samples:
+						raise Exception(f"The control position {pos_control} of Plate {index_plate + 1} is not inside of the samples given for this plate with the first well to consider and the number of samples in that plate")
 					
-		# Check the positions not to take are in the source labware
+		# Check the positions not to take are in the source labware  and inside of the established samples
 		for index_plate, pos_notPCR in enumerate(self.positionsNotPCR[:self.numberSourcePlates]):
+			index_first_well = definition_source_plate["groups"][0]["wells"].index(self.firstWellSamplePerPlate[index_plate])
+			wells_with_samples = definition_source_plate["groups"][0]["wells"][index_first_well:index_first_well+self.samplesPerPlate[index_plate]]
 			if not pd.isna(pos_notPCR):
 				not_pcr = pos_notPCR.replace(" ","").split(",")
 				for pos_notPCR in not_pcr:
 					if pos_notPCR not in definition_source_plate["wells"].keys():
 						raise Exception(f"The well {pos_notPCR} of Plate {index_plate + 1} not in the labware {self.APINameSamplePlate}. Check for typos")
+					if pos_notPCR not in wells_with_samples:
+						raise Exception(f"The well {pos_notPCR} of Plate {index_plate + 1} is not inside of the samples given for this plate with the first well to consider and the number of samples in that plate")
 
 		# Check that the control positions and the wells not to perform are not the same 
 		for set_control, set_not_perform in zip(self.positionsControls[:self.numberSourcePlates], self.positionsNotPCR[:self.numberSourcePlates]):
@@ -419,6 +426,7 @@ class SettedParameters:
 											  "Opentrons Place":None,
 											  "Index First Well Sample": opentrons.protocol_api.labware.get_labware_definition(user_variables.APINameSamplePlate)["groups"][0]["wells"].index(user_variables.firstWellSamplePerPlate[index_plate]),
 											  "Control Positions": control_positions,
+											  "Number Controls": len(control_positions),
 											  "Positions Not Perform PCR": positions_notPCR,
 											  "Map Names":None}
 			self.sumSamples += self.samplePlates[index_plate]["Number Samples"] - len(self.samplePlates[index_plate]["Positions Not Perform PCR"]) # In this we already take in account the controls because they are inside of the number samples
@@ -1099,7 +1107,7 @@ The columns and rows of the Maps of DNA Parts {user_variables.mapID[index_labwar
 	# Set the final plates which number has been calculates in the assign_variables method of the clas SettedParameters
 	
 	if user_variables.presenceTermo:
-		program_variables.tc_mod.load_labware(user_variables.APINameSamplePlate, label = f"Final PCR Plate Slot 7")
+		program_variables.tc_mod.load_labware(user_variables.APINameFinalPlate, label = f"Final PCR Plate Slot 7")
 		labware_final = {7: program_variables.tc_mod.labware}
 	else:
 		labware_final = setting_labware(len(program_variables.finalPlates), user_variables.APINameFinalPlate, program_variables.deckPositions, protocol, label = "Final Plate")
@@ -1294,6 +1302,7 @@ The columns and rows of the Maps of DNA Parts {user_variables.mapID[index_labwar
 
 	# Take the wells that we are not going to pick up and move the controls to the end
 	all_samples_transfer = []
+	control_wells = []
 	for source_plate in program_variables.samplePlates.values():
 		wells = source_plate["Opentrons Place"].wells()[source_plate["Index First Well Sample"]:source_plate["Index First Well Sample"]+source_plate["Number Samples"]]
 		for notPCR in source_plate["Positions Not Perform PCR"]:
@@ -1306,10 +1315,12 @@ The columns and rows of the Maps of DNA Parts {user_variables.mapID[index_labwar
 				wells.remove(source_plate["Opentrons Place"][control])
 			except ValueError: # The value of the list source_plate["Control Positions"] is not in the list wells but exists in the labware (we checked that before in the script)
 				pass
-			wells.append(source_plate["Opentrons Place"][control])
+			control_wells.append(source_plate["Opentrons Place"][control])
 		all_samples_transfer += wells
+	all_samples_transfer += control_wells	
+	
 	# Create the generator of wells to distribute
-	final_wells = generator_positions(wells_distribute)
+	final_wells = generator_positions(wells_distribute[index_start_final_plate:int(index_start_final_plate+user_variables.sets*program_variables.sumSamples)])
 	for number_set in range(int(user_variables.sets)):
 		for well_source in all_samples_transfer:
 			well_pcr = next(final_wells)
