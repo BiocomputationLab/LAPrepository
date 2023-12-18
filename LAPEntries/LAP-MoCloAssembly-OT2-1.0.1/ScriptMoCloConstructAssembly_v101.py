@@ -237,8 +237,8 @@ class UserVariables:
 		all_elements_maps = [] # This is meant for the next check which will see if the values are only once in the maps
 		for index_map, name_map in enumerate(self.nameSheetMapParts[:self.numberSourcePlates]):
 			try:
-				# map_content = pd.read_excel('/data/user_storage/VariablesMoCloAssembly.xlsx', sheet_name = name_map, index_col=0, engine = "openpyxl")
-				map_content = pd.read_excel('VariablesMoCloAssemblySimulation.xlsx', sheet_name = name_map, index_col=0, engine = "openpyxl")
+				map_content = pd.read_excel('/data/user_storage/VariablesMoCloAssembly.xlsx', sheet_name = name_map, index_col=0, engine = "openpyxl")
+				# map_content = pd.read_excel('VariablesMoCloAssemblySimulation.xlsx', sheet_name = name_map, index_col=0, engine = "openpyxl")
 			except ValueError: # Error that appears when the sheet 'name_map' does not exist in the excel file
 				raise Exception(f"The Sheet '{name_map}' does not exist in the file 'VariablesMoCloAssembly.xlsx'")
 			
@@ -421,8 +421,8 @@ class MapLabware:
 		self.map.loc[row, column] = value
 	
 	def export_map(self, name_final_file):
-		# self.map.to_csv("/data/user_storage/"+name_final_file, header = True, index = True)
-		self.map.to_csv(name_final_file, header = True, index = True)
+		self.map.to_csv("/data/user_storage/"+name_final_file, header = True, index = True)
+		# self.map.to_csv(name_final_file, header = True, index = True)
 		
 class NotSuitablePipette(Exception):
 	"Custom Error raised when there is no pipette that can transfer the volume"
@@ -977,8 +977,8 @@ def run(protocol:opentrons.protocol_api.ProtocolContext):
 	#----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	# Read Variables Excel, define the user and protocol variables and check them for initial errors
 	# Read Excel
-	# excel_variables = pd.read_excel("/data/user_storage/VariablesMoCloAssembly.xlsx", sheet_name = None, engine = "openpyxl")
-	excel_variables = pd.read_excel("VariablesMoCloAssemblySimulation.xlsx", sheet_name = None, engine = "openpyxl")
+	excel_variables = pd.read_excel("/data/user_storage/VariablesMoCloAssembly.xlsx", sheet_name = None, engine = "openpyxl")
+	# excel_variables = pd.read_excel("VariablesMoCloAssemblySimulation.xlsx", sheet_name = None, engine = "openpyxl")
 	# Let's check that the minimal sheets
 	name_sheets = list(excel_variables.keys())
 
@@ -1102,8 +1102,8 @@ def run(protocol:opentrons.protocol_api.ProtocolContext):
 	for index_labware, labware in enumerate(labware_source.items()):
 		program_variables.samplePlates[index_labware]["Position"] = labware[0]
 		program_variables.samplePlates[index_labware]["Opentrons Place"] = labware[1]
-		# program_variables.samplePlates[index_labware]['Map Names'] = pd.read_excel("/data/user_storage/VariablesMoCloAssembly.xlsx", sheet_name = user_variables.nameSheetMapParts[index_labware], index_col = 0, engine = "openpyxl")
-		program_variables.samplePlates[index_labware]['Map Names'] = pd.read_excel("VariablesMoCloAssemblySimulation.xlsx", sheet_name = user_variables.nameSheetMapParts[index_labware], index_col = 0, engine = "openpyxl")
+		program_variables.samplePlates[index_labware]['Map Names'] = pd.read_excel("/data/user_storage/VariablesMoCloAssembly.xlsx", sheet_name = user_variables.nameSheetMapParts[index_labware], index_col = 0, engine = "openpyxl")
+		# program_variables.samplePlates[index_labware]['Map Names'] = pd.read_excel("VariablesMoCloAssemblySimulation.xlsx", sheet_name = user_variables.nameSheetMapParts[index_labware], index_col = 0, engine = "openpyxl")
 		program_variables.samplePlates[index_labware]['Map Volumes'] = pd.DataFrame(0, index = list(program_variables.samplePlates[index_labware]["Opentrons Place"].rows_by_name().keys()), columns = list(program_variables.samplePlates[index_labware]["Opentrons Place"].columns_by_name().keys()))
 		program_variables.samplePlates[index_labware]['Map Liquid Definitions'] = pd.DataFrame(np.nan, index = list(program_variables.samplePlates[index_labware]["Opentrons Place"].rows_by_name().keys()), columns = list(program_variables.samplePlates[index_labware]["Opentrons Place"].columns_by_name().keys()))
 		
@@ -1515,8 +1515,8 @@ The columns and rows of the Maps of DNA Parts {user_variables.nameSheetMapParts[
 				finalplate["Map Combinations"].assign_value(name_combination, well_final_combination._core._row_name, well_final_combination._core._column_name)
 				
 	# Export map(s) in an excel
-	# writer = pd.ExcelWriter(f'/data/user_storage/{user_variables.finalMapName}.xlsx', engine='openpyxl')
-	writer = pd.ExcelWriter(f'{user_variables.finalMapName}.xlsx', engine='openpyxl')
+	writer = pd.ExcelWriter(f'/data/user_storage/{user_variables.finalMapName}.xlsx', engine='openpyxl')
+	# writer = pd.ExcelWriter(f'{user_variables.finalMapName}.xlsx', engine='openpyxl')
 	
 	for final_plate in program_variables.finalPlates.values():
 		final_plate["Map Combinations"].map.to_excel(writer, sheet_name = f"CombinationsSlot{final_plate['Position']}")
