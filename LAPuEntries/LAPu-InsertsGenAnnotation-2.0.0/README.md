@@ -43,3 +43,10 @@ This tracking will only work if in the names of the sequences during the allignm
 The lcoation tracking only works for 96-well plates layouts in which the rows go from A to H and columns go from 1 to 12.
 
 For example, if the name of the file is _22CCRAA000_A01_premix.txt_ this file will be tracked with the well A1 or cell in the table corresponding to the column with the name 1 and row with the value A. If the name file does not contain that A01 between underscores, this tracking will not be possible to do and providing this file will cause a warning during the runing of the program but it wont make the program exit.
+
+# Usage example
+With the files in the directory _input_ and _ScriptAllignmentAnnotation_v200.py_ you can cretae the results given in the directory _output_ running the following command to make sure that everything work as it should do
+
+```
+python3.11 alignment_script.py sequencing_results txt Pseudomonas_putida_KT2440_110.fna Pseudomonas_putida_KT2440_110.csv -out output -quality ab1 -seq sanger -identity map_identity_plate.xlsx
+```
