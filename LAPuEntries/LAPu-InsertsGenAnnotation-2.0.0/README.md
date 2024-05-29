@@ -48,5 +48,5 @@ For example, if the name of the file is _22CCRAA000_A01_premix.txt_ this file wi
 With the files in the directory _input_ and _ScriptAllignmentAnnotation_v200.py_ you can cretae the results given in the directory _output_ running the following command to make sure that everything work as it should do
 
 ```
-python3.11 alignment_script.py sequencing_results txt Pseudomonas_putida_KT2440_110.fna Pseudomonas_putida_KT2440_110.csv -out output -quality ab1 -seq sanger -identity map_identity_plate.xlsx
+python3.11 alignment_script.py sequencing_results txt Pseudomonas_putida_KT2440_110.fna Pseudomonas_putida_KT2440_110.csv -out output -quality ab1 -seq sanger -identity map_identity_plate.xlsx -sm
 ```
