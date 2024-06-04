@@ -1205,7 +1205,7 @@ def run(protocol:opentrons.protocol_api.ProtocolContext):
 	
 	# Read Excel
 	excel_variables = pd.read_excel("/data/user_storage/VariablesPlateIncubation.xlsx", sheet_name = None, engine = "openpyxl")
-	# excel_variables = pd.read_excel("VariablesPlateIncubation.xlsx", sheet_name = None, engine = "openpyxl")
+	# excel_variables = pd.read_excel("VariablesPlateIncubationSimulation.xlsx", sheet_name = None, engine = "openpyxl")
 
 	# Let's check that the minimal sheets exist in the excel
 	name_sheets = list(excel_variables.keys())
