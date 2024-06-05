@@ -99,9 +99,9 @@ class UserVariables:
 		if pd.isna(self.replaceTiprack):
 			raise Exception("The variable 'Replace Tipracks' in PipetteVariables cannot be left empty")
 		else: # Check that the value of this variable is either True or False
-			if self.replaceTiprack in ["False", "FALSE", False, 0]:
+			if self.replaceTiprack in ["False", "FALSE", False, 0, "false"]:
 				self.replaceTiprack = False
-			elif self.replaceTiprack in ["True", "TRUE", True, 1]:
+			elif self.replaceTiprack in ["True", "TRUE", True, 1, "true"]:
 				self.replaceTiprack = True
 			else:
 				raise Exception("Replace Tiprack variable value needs to be True or False, it cannot be empty")
@@ -139,29 +139,27 @@ class UserVariables:
 					self.onlyMediaPlate[index_plate] = False # We assign the default value, False
 				else:
 					# We change the 1s to True and the 0s to False because excel sometimes does that conversion when the rest of the cells are empty
-					if only_media in [1, True, "True", "TRUE"]:
+					if only_media in [1, True, "True", "TRUE", "true"]:
 						self.onlyMediaPlate[index_plate] = True
-					elif only_media in [0, False, "False", "FALSE"]:
+					elif only_media in [0, False, "False", "FALSE", "false"]:
 						self.onlyMediaPlate[index_plate] = False
-
-					if only_media not in [True, False]:
+					else:
 						raise Exception("The values for the variable 'Only Media(s) Plate Creation' can only be True or False, if left empty it is assumed as False ")
 		
-		if any(pd.isna(elem) == False or elem == 0 for elem in self.onlySamplePlate[self.numberSourcePlates:]):
-			raise Exception("The values of 'Only Media(s) Plate Creation' can be as many as the 'Number of Source Plates' and in consecutive columns, if empty, it is considered that is as False")
+		if any(pd.isna(elem) == False for elem in self.onlySamplePlate[self.numberSourcePlates:]):
+			raise Exception("The values of 'Only Sample(s) Plate Creation' can be as many as the 'Number of Source Plates' and in consecutive columns, if empty, it is considered that is as False")
 		else:
 			for index_plate, only_sample in enumerate(self.onlySamplePlate[:self.numberSourcePlates]):
 				if pd.isna(only_sample):
 					self.onlySamplePlate[index_plate] = False # We assign the default value, False
 				else:
 					# We change the 1s to True and the 0s to False because excel sometimes does that conversion when teh rest of the cells are empty
-					if only_sample in [1, True, "True", "TRUE"]:
+					if only_sample in [1, True, "True", "TRUE", "true"]:
 						self.onlySamplePlate[index_plate] = True
-					elif only_sample in [0, False, "False", "FALSE"]:
+					elif only_sample in [0, False, "False", "FALSE", "false"]:
 						self.onlySamplePlate[index_plate] = False
-					
-					if only_sample not in [True, False]:
-						raise Exception("The values for the variable 'Only Media(s) Plate Creation' can only be True or False, if left empty it is assumed as False ")
+					else:
+						raise Exception("The values for the variable 'Only Sample(s) Plate Creation' can only be True or False, if left empty it is assumed as False")
 		
 		# Check for inconsistencies in the variables 'Only Media(s) Plate Creation' and 'Only Sample(s)  Plate Creation'
 		for only_media, only_sample in zip(self.onlyMediaPlate[:self.numberSourcePlates], self.onlySamplePlate[:self.numberSourcePlates]):
@@ -235,9 +233,9 @@ class UserVariables:
 			# We check that the value of toyuch tip after transferring samples is true, false or left empty
 			if pd.isna(self.touchTipTransferSample):
 				self.touchTipTransferSample = False
-			elif self.touchTipTransferSample in [False, 0, "False", "FALSE"]:
+			elif self.touchTipTransferSample in [False, 0, "False", "FALSE", "false"]:
 				self.touchTipTransferSample = False
-			elif self.touchTipTransferSample in [True, 1, "True", "TRUE"]:
+			elif self.touchTipTransferSample in [True, 1, "True", "TRUE", "true"]:
 				self.touchTipTransferSample = True
 			else:
 				raise Exception("'Touch Tip After Transferring Sample' can only have 2 values: True or False. If left empty assumed as False")
@@ -245,6 +243,7 @@ class UserVariables:
 			# If samples are going to be transferred we need to have a dource and final labware that has 8 rows
 			if len(definition_source_plate["ordering"][0]) != 8:
 				raise Exception("At least 1 final plate is going to contain samples which means that the 8-channel pipette is going to be used. For that reason, the labware defined in 'Name Source Plate' needs to have 8 rows.")
+			
 			if len(definition_final_plate["ordering"][0]) != 8:
 				raise Exception("At least 1 final plate is going to contain samples which means that the 8-channel pipette is going to be used. For that reason, the labware defined in 'Name Final Plate' needs to have 8 rows.")
 		else: # Only media plates are going to be created
@@ -1205,7 +1204,7 @@ def run(protocol:opentrons.protocol_api.ProtocolContext):
 	
 	# Read Excel
 	excel_variables = pd.read_excel("/data/user_storage/VariablesPlateIncubation.xlsx", sheet_name = None, engine = "openpyxl")
-	# excel_variables = pd.read_excel("VariablesPlateIncubationSimulation.xlsx", sheet_name = None, engine = "openpyxl")
+	# excel_variables = pd.read_excel("VariablesPlateIncubation.xlsx", sheet_name = None, engine = "openpyxl")
 
 	# Let's check that the minimal sheets exist in the excel
 	name_sheets = list(excel_variables.keys())
@@ -1238,8 +1237,16 @@ def run(protocol:opentrons.protocol_api.ProtocolContext):
 	
 	# Get initialized user_variables and check for initial errors
 	user_variables = UserVariables(general_variables, plate_variables, pip_variables)
+	for key, item in vars(user_variables).items():
+		print(key)
+		print(item)
 	user_variables.check()
-	
+	print()
+	print()
+	for key, item in vars(user_variables).items():
+		print(key)
+		print(item)
+	quit()
 	# Initialize program_variables and assign the variables using the values inside of user_variable
 	program_variables = SetParameters()
 	program_variables.assign_variables(user_variables, protocol)
