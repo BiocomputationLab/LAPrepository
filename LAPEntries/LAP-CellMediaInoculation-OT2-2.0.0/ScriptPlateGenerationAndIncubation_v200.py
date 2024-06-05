@@ -1237,16 +1237,7 @@ def run(protocol:opentrons.protocol_api.ProtocolContext):
 	
 	# Get initialized user_variables and check for initial errors
 	user_variables = UserVariables(general_variables, plate_variables, pip_variables)
-	for key, item in vars(user_variables).items():
-		print(key)
-		print(item)
-	user_variables.check()
-	print()
-	print()
-	for key, item in vars(user_variables).items():
-		print(key)
-		print(item)
-	quit()
+
 	# Initialize program_variables and assign the variables using the values inside of user_variable
 	program_variables = SetParameters()
 	program_variables.assign_variables(user_variables, protocol)
