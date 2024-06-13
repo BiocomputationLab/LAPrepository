@@ -8,7 +8,7 @@ Script:
   Colony selection from one or more plates
   taking in account a 2 criteria value threshold
   in an opentrons robot OT-2
- downloadURL: https://github.com/BiocomputationLab/LAPrepository/tree/31c0f1fb6cd9a11fd9deb60a49a313f8b06ca2dd/LAPEntries/LAP-ColonyCounterSelection-OT2-2.0.0
+ downloadURL: https://github.com/BiocomputationLab/LAPrepository/tree/main/LAPEntries/LAP-ColonyCounterSelection-OT2-2.0.0
  date: 07/06/2024
 Author:
  name: Biocomputation Lab
