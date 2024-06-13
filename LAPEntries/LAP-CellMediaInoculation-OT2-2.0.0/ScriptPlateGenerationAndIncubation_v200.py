@@ -263,11 +263,15 @@ class UserVariables:
 			try:
 				definition_rack = labware_context.get_labware_definition(self.APINameFalconPlate)
 			except OSError: # This would be catching the FileNotFoundError that happens when a labware is not found
-				raise Exception(f"The 15mL falcon tube rack labware {self.APINameFalconPlate} is not in the opentrons labware space so it cannot be defined. Check for any typo of the api labware name or that the labware is in the Opentrons App.")
+				raise Exception(f"The falcon tube rack labware {self.APINameFalconPlate} is not in the opentrons labware space so it cannot be defined. Check for any typo of the api labware name or that the labware is in the Opentrons App.")
 
 			# Check the falcon tube rack is only composed by only 1 type of falcons, 15 or 50mL
 			if len(definition_rack["groups"]) > 1:
 				raise Exception("The falcon rack needs to have only 1 type of tube admitted, either with 15mL or 50mL falcons. Tube racks such as 'Opentrons 10 Tube Rack with Falcon 4x50 mL, 6x15 mL Conical' are not valid")
+
+			# Check that the volume of those falcons are either 15ml or 50mL
+			if list(definition_rack["wells"].values())[0]['totalLiquidVolume'] not in [15000, 50000]:
+				raise Exception("The tubes of the falcon rack needs to be either 15mL or 50mL")
 
 			# Check that if a final plate with media is going to be created, the left pipette is defined in the variable file and all the related variables
 			if pd.isna(self.APINamePipL):
@@ -1237,6 +1241,7 @@ def run(protocol:opentrons.protocol_api.ProtocolContext):
 	
 	# Get initialized user_variables and check for initial errors
 	user_variables = UserVariables(general_variables, plate_variables, pip_variables)
+	user_variables.check()
 
 	# Initialize program_variables and assign the variables using the values inside of user_variable
 	program_variables = SetParameters()
