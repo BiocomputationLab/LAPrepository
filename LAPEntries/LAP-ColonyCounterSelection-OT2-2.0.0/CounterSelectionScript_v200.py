@@ -225,29 +225,29 @@ class UserVariables:
 		# Check if the sheet names for the selection values exist and if they fit the labware source description
 		for sheet_name_lowerThreshold in self.nameSheetLowerThreshold[:self.numberSourcePlates]:
 			try:
-				# values_lower = pd.read_excel("VariablesCounterSelection.xlsx", sheet_name = sheet_name_lowerThreshold, engine = "openpyxl", header = None)
-				values_lower = pd.read_excel("/data/user_storage/VariablesCounterSelection.xlsx", sheet_name = sheet_name_lowerThreshold, engine = "openpyxl", header = None)
+				# values_lower = pd.read_excel("VariablesCounterSelection.xlsx", sheet_name = sheet_name_lowerThreshold, index_col = 0, engine = "openpyxl")
+				values_lower = pd.read_excel("/data/user_storage/VariablesCounterSelection.xlsx", sheet_name = sheet_name_lowerThreshold, index_col = 0, engine = "openpyxl")
 			except ValueError: # Error that appears when the sheet 'sheet_name_lowerThreshold' does not exist in the excel file
 				raise Exception(f"The Sheet Name {sheet_name_lowerThreshold} does not exist in excel file")
-			
+
 			if values_lower.shape[0] != len(definition_source_plate["ordering"][0]) or values_lower.shape[1] != len(definition_source_plate["ordering"]):
-				raise Exception(f"Selecting Sheet Values should have the dimension of the source labware (in this case {len(definition_source_plate['ordering'][0])} rows and {len(definition_source_plate['ordering'])} columns).\nDo not include the names of the rows or the columns in the sheet, only values.")
-			
+				raise Exception(f"Selecting Sheet Values in '{sheet_name_lowerThreshold}' should have the dimension of the source labware (in this case {len(definition_source_plate['ordering'][0])} rows and {len(definition_source_plate['ordering'])} columns).\nYou need to include the name of teh rows and the name of the columns")
+
 			# Check if there is an empty cell or something that is not a float or int
 			if values_lower.isnull().values.any():
 				raise Exception(f"The Sheet {sheet_name_lowerThreshold} has an empty cell")
 			if not pd.api.types.is_numeric_dtype(values_lower.to_numpy()):
 				raise Exception(f"The Sheet {sheet_name_lowerThreshold} has a value that is not a number")
-			
+		
 		for sheet_name_higherThreshold in self.nameSheetHigherThreshold[:self.numberSourcePlates]:
 			try:
-				# values_higher = pd.read_excel("VariablesCounterSelection.xlsx", sheet_name = sheet_name_higherThreshold, engine = "openpyxl", header = None)
-				values_higher = pd.read_excel("/data/user_storage/VariablesCounterSelection.xlsx", sheet_name = sheet_name_higherThreshold, engine = "openpyxl", header = None)
+				# values_higher = pd.read_excel("VariablesCounterSelection.xlsx", sheet_name = sheet_name_higherThreshold, index_col = 0, engine = "openpyxl")
+				values_higher = pd.read_excel("/data/user_storage/VariablesCounterSelection.xlsx", sheet_name = sheet_name_higherThreshold, index_col = 0, engine = "openpyxl")
 			except ValueError: # Error that appears when the sheet 'sheet_name_higherThreshold' does not exist in the excel file
 				raise Exception(f"The Sheet Name {sheet_name_higherThreshold} does not exist in excel file")
 			
 			if values_higher.shape[0] != len(definition_source_plate["ordering"][0]) or values_higher.shape[1] != len(definition_source_plate["ordering"]):
-				raise Exception(f"Selecting Sheet Values should have the dimension of the source labware ({len(definition_source_plate['ordering'][0])} rows and {len(definition_source_plate['ordering'])} columns).\nDo not include the names of the rows or the columns in the sheet, only values.")
+				raise Exception(f"Selecting Sheet Values in '{sheet_name_higherThreshold}' should have the dimension of the source labware ({len(definition_source_plate['ordering'][0])} rows and {len(definition_source_plate['ordering'])} columns).\nYou need to include the name of teh rows and the name of the columns")
 			
 			# Check if there is an empty cell or something that is not a float or int
 			if values_higher.isnull().values.any():
@@ -349,7 +349,12 @@ class SettedParameters:
 		# We are going to define the entry (initial) to every reactive that is needed
 		if self.numberReactives > 0:
 			for index_reactive, reactive in enumerate(user_variables.nameReactives):
-				self.reactiveWells[reactive] = {"Positions":[], "Volumes":None, "Reactions Per Tube":None, "Number Total Reactions":0, "Definition Liquid": None, "Volume Per Sample":float(user_variables.volumesReactivePerPlate[index_reactive])}
+				self.reactiveWells[reactive] = {"Positions":[],
+												"Volumes":None,
+												"Reactions Per Tube":None,
+												"Number Total Reactions":0,
+												"Definition Liquid": None,
+												"Volume Per Sample":float(user_variables.volumesReactivePerPlate[index_reactive])}
 				
 				# Give the colour
 				while True:
@@ -371,10 +376,10 @@ class SettedParameters:
 											  "Label":f"Source Plate '{user_variables.nameSourcePlates[index_plate]}'",
 											  "Mediums":None,
 											  "Opentrons Place":None,
-											  "Values for Selection (Lower than Threshold)":pd.read_excel("/data/user_storage/VariablesCounterSelection.xlsx", sheet_name = user_variables.nameSheetLowerThreshold[index_plate], engine = "openpyxl", header = None),
-											  "Values for Selection (Greater than Threshold)":pd.read_excel("/data/user_storage/VariablesCounterSelection.xlsx", sheet_name = user_variables.nameSheetHigherThreshold[index_plate], engine = "openpyxl", header = None),
-											#   "Values for Selection (Lower than Threshold)":pd.read_excel("VariablesCounterSelection.xlsx", sheet_name = user_variables.nameSheetLowerThreshold[index_plate], engine = "openpyxl", header = None),
-											#   "Values for Selection (Greater than Threshold)":pd.read_excel("VariablesCounterSelection.xlsx", sheet_name = user_variables.nameSheetHigherThreshold[index_plate], engine = "openpyxl", header = None),
+											  "Values for Selection (Lower than Threshold)":pd.read_excel("/data/user_storage/VariablesCounterSelection.xlsx", sheet_name = user_variables.nameSheetLowerThreshold[index_plate], index_col = 0, engine = "openpyxl"), ### CAMBIO
+											  "Values for Selection (Greater than Threshold)":pd.read_excel("/data/user_storage/VariablesCounterSelection.xlsx", sheet_name = user_variables.nameSheetHigherThreshold[index_plate], index_col = 0, engine = "openpyxl"), ### CAMBIO
+											#   "Values for Selection (Lower than Threshold)":pd.read_excel("VariablesCounterSelection.xlsx", sheet_name = user_variables.nameSheetLowerThreshold[index_plate], index_col = 0, engine = "openpyxl"), ### CAMBIO
+											#   "Values for Selection (Greater than Threshold)":pd.read_excel("VariablesCounterSelection.xlsx", sheet_name = user_variables.nameSheetHigherThreshold[index_plate], index_col = 0, engine = "openpyxl"), ### CAMBIO
 											  "Threshold Value":user_variables.threshold[index_plate],
 											  "Map Selected Colonies":None, # We will create this map when we establish the final plates
 											  "Name Final Map":user_variables.nameFinalSheet[index_plate],
@@ -408,7 +413,7 @@ class SettedParameters:
 
 class MapLabware:
 	"""
-	Class that will store the map of each of the source plates to final export
+	Class that will store the map of each of the final plates to final export
 	"""
 	def __init__(self, labware):
 
@@ -417,7 +422,7 @@ class MapLabware:
 		number_rows = len(self.name_rows)
 		number_columns = len(self.name_columns)
 		
-		self.map = pd.DataFrame(np.full((number_rows,number_columns),None),columns=self.name_columns,index=self.name_rows)
+		self.map = pd.DataFrame(np.full((number_rows,number_columns), None), columns = self.name_columns, index = self.name_rows)
 		self.map.index.name = "Row/Column"
 
 	def assign_value(self, value, row, column):
@@ -1128,7 +1133,6 @@ def run(protocol:opentrons.protocol_api.ProtocolContext):
 		if not all(item in pip_variables["Variable Names"].values for item in ['API Name Right Pipette','API Name Left Pipette','API Name Tiprack Left Pipette','API Name Tiprack Right Pipette', 'Initial Tip Left Pipette', 'Initial Tip Right Pipette', 'Replace Tipracks']):
 			raise Exception("'PipetteVariables' Sheet table needs to have 7 rows with the following names: 'API Name Right Pipette','API Name Left Pipette','API Name Tiprack Left Pipette','API Name Tiprack Right Pipette', 'Initial Tip Left Pipette', 'Initial Tip Right Pipette', 'Replace Tipracks'")
 	
-
 	user_variables = UserVariables(general_variables, plate_variables, pip_variables)
 	user_variables.check()
 	program_variables = SettedParameters(len(protocol.deck))
@@ -1147,6 +1151,28 @@ def run(protocol:opentrons.protocol_api.ProtocolContext):
 		program_variables.samplePlates[index_labware]["Position"] = labware[0]
 		program_variables.samplePlates[index_labware]["Opentrons Place"] = labware[1]
 		
+		# Check that the name of the rows and colums from the maps given by the user actually are coherent with the source labware
+		row_names = list(labware[1].rows_by_name().keys())
+		columns_names = list(labware[1].columns_by_name().keys())
+		
+		rows_map_lower = list(program_variables.samplePlates[index_labware]['Values for Selection (Lower than Threshold)'].index.values)
+		columns_map_lower = list(map(str, list(program_variables.samplePlates[index_labware]['Values for Selection (Lower than Threshold)'].columns.values)))
+
+		rows_map_higher = list(program_variables.samplePlates[index_labware]['Values for Selection (Greater than Threshold)'].index.values)
+		columns_map_higher = list(map(str, list(program_variables.samplePlates[index_labware]['Values for Selection (Greater than Threshold)'].columns.values)))
+
+		if row_names != rows_map_lower or row_names != rows_map_higher or columns_names != columns_map_lower or columns_names != columns_map_higher:
+			raise Exception(f"""
+The columns and rows of the sheets with the values to compare for '{program_variables.samplePlates[index_labware]["Name Plate"]}' need to have the same names as the ones in {user_variables.APINameSamplePlate}:
+	Labware Names:
+		- Column names: {columns_names}
+		- Row names: {row_names}
+	Your names:
+		- Sheet Higher Values Columns: {columns_map_higher}
+		- Sheet Higher Values Rows: {rows_map_higher}
+		- Sheet Lower Values Columns: {columns_map_lower}
+		- Sheet Lower Values Rows: {rows_map_lower}""")
+
 		# Set the liquid of samples
 		for well in program_variables.samplePlates[index_labware]["Opentrons Place"].wells():
 			well.load_liquid(program_variables.liquid_samples, volume = 0.9*vol_max_well_source_labware)
