@@ -7,7 +7,7 @@ Script:
  description: >
   Creation of different media-sample combination from 1 or more source plates
   with samples and 1 or more media to inoculate the samples
- downloadURL: 
+ downloadURL: https://github.com/BiocomputationLab/LAPrepository/tree/main/LAPEntries/LAP-CellMediaInoculation-OT2-2.0.0
  date: 03/06/2024
 Author:
  name: Biocomputation Lab
@@ -25,7 +25,7 @@ Environment:
  system: Linux
  osVersion: 4.14.74
 Requirements:
- - "opentrons >=7.0.2"
+ - "opentrons >= 7.0.2"
  - "pandas >= 0.25.3"
  - "numpy >= 1.15.1"
  - "openpyxl >= 3.1.2"
