@@ -1,4 +1,4 @@
-def mixing_eppendorf_15 (location_tube, volume_tube, volume_mixing, pipette, protocol):
+def mixing_eppendorf_15 (location_tube, volume_tube, volume_mixing, pipette):
 	"""
 	Function that will perform the mixing of a 1.5mL eppendorf tube iwth a given pipette
 
