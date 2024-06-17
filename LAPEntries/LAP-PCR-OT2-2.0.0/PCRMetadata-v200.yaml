@@ -7,7 +7,7 @@ Script:
  description: >
   Preparing the PCR mix with the DNA template and reactives for a set number of set of primers
   to all the established source samples
- downloadURL: https://github.com/Biocomputation-CBGP/LAPrepository/tree/main/LAPEntries/LAP-PCR-OT2-1.0.0
+ downloadURL: https://github.com/BiocomputationLab/LAPrepository/tree/main/LAPEntries/LAP-PCR-OT2-2.0.0
  date: 13/06/2024
 Author:
  name: Biocomputation Lab
