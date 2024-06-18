@@ -7,10 +7,10 @@ Each file is one function used in at least 1 LAP entry.
 
 ### Objective
 
-Function that will return the number of reactions that can be aspirate or dispensed from a flacon tube of 15mL without having to change the height of aspiration.
+Function that will return the number of reactions that can be aspirated or dispensed from a falcon tube of 15mL without having to change the height of aspiration.
 
-This change of heights is given by another function, thi sfunction only check when this change of height happens and it is checked until a maximum number of reactions,
-which is given by the input given to the function
+This change of heights is given by another function, _find_safe_15mLflacon_height_ that give sthe aspiration/dispense height for that specific volume. This height is checked until a maximum number of reactions,
+which is given by the input given to the function, is reached.
 
 ### Tested systems
 
@@ -45,13 +45,14 @@ Opentrons OT-2
 
 ### Output
 
-* The number of reactions, in the range 0-_total_number_reactions_, that can be aspirated from a tube _well_ with the volume _vol_tube_ without changing heights according to the function _find_safe_15mLfalcon_height_ 
+* The number of reactions, in the range 0-_total_number_reactions_, that can be aspirated from the tube established in _tube_ with the volume _vol_tube_ without changing heights according to the function _find_safe_15mLfalcon_height_ 
 
 ### Summary of functioning
 1. Check if the volume of the tube is enough to aspirate the _total_number_reactions_
 2. Initiate the reactions in same height to 0
-3. While loop that will be accesed while the height to aspirate without taking the reactions and after is the same
-   1. Check if the current numbe rof reactions + 1 will be higher than _total_number_reaction
+3. Check that at least 1 _vol_per_reaction_ can be transferred without changing height and otherwise, return 0
+4. While loop that will be accesed while the height to aspirate without taking the reactions and after is the same
+   1. Check if the current number of reactions + 1 will be higher than _total_number_reaction_
 
       **reactions + 1 is higher than total number**
 
@@ -60,7 +61,67 @@ Opentrons OT-2
       **reactions + 1 is lower or equal than total number**
 
       1. Add 1 to the reactions
-4. Return the number of reactions
+5. Return the number of reactions
+
+## `calculate_max_reactions_constant_height_50mLfalcon`
+
+### Objective
+
+Function that will return the number of reactions that can be aspirated or dispensed from a falcon tube of 50mL without having to change the height of aspiration.
+
+This change of heights is given by another function, _find_safe_50mLflacon_height_ that give sthe aspiration/dispense height for that specific volume. This height is checked until a maximum number of reactions,
+which is given by the input given to the function, is reached.
+
+### Tested systems
+
+Opentrons OT-2
+
+### Requirements
+
+* `find_safe_50mLfalcon_height` function
+
+### Input
+4 Inputs required:
+1. **tube** (_opentrons.protocol_api.labware.Well_): tube that is going to be the one from where the possible reactions will be calculated.
+
+   For example:
+
+   		A3 of Opentrons 6 Tube Rack with Falcon 50 mL Conical on slot 2
+2. **vol_tube** (_int|float_): volume, in uL, that _tube_ has.
+
+   For example:
+
+   		25350
+4. **total_number_reactions** (_int_): maximum number of reactions that wanted to be checked. In case that this number of reactions can be aspirated without changing the height, this number will be returned.
+
+   For example:
+
+   		50
+6. **vol_per_reaction** (_int|float_): volume, in uL, that is going to be aspirated by reaction
+
+   For exmaple:
+
+   		200
+
+### Output
+
+* The number of reactions, in the range 0-_total_number_reactions_, that can be aspirated from the tube established in _tube_ with the volume _vol_tube_ without changing heights according to the function _find_safe_50mLfalcon_height_ 
+
+### Summary of functioning
+1. Check if the volume of the tube is enough to aspirate the _total_number_reactions_
+2. Initiate the reactions in same height to 0
+3. Check that at least 1 _vol_per_reaction_ can be transferred without changing height and otherwise, return 0
+4. While loop that will be accesed while the height to aspirate without taking the reactions and after is the same
+   1. Check if the current number of reactions + 1 will be higher than _total_number_reaction_
+
+      **reactions + 1 is higher than total number**
+
+      1. break the while loop
+      
+      **reactions + 1 is lower or equal than total number**
+
+      1. Add 1 to the reactions
+5. Return the number of reactions
 
 ## `check_tip_and_pick`
 
@@ -284,6 +345,184 @@ Opentrons OT-2
    3. Return the position and tip rack in a dictionary
 4. If the tiprack has not been defined after the loop, an Exception will be raised
 
+## `distribute_z_tracking_falcon15_50ml`
+
+### Objective
+
+A function that will distribute from 1 well (15mL or 50mL falcon tube) to a list of wells tracking the height of the falcon tube to avoid the pipette from getting wet
+
+### Tested systems
+
+Opentrons OT-2
+
+### Requirements
+
+* Function `check_tip_and_pick`
+* Function `find_safe_15mLfalcon_height`
+* Function `find_safe_50mLfalcon_height`
+* Function `calculate_max_reactions_constant_height_15mLfalcon`
+* Function `calculate_max_reactions_constant_height_50mLfalcon`
+
+### Input
+10 Inputs required:
+1. **pipette_used** (_opentrons.protocol_api.instrument_context.InstrumentContext_): Pipette that will distribute or transfer the _vol_distribute_well_ to the _pos_final_.
+
+   For example:
+        
+        P20 Single-Channel GEN2 on right mount object
+2. **tip_rack_pipette** (_str_): tiprack API name asociated to the _pipette_used_ that is going to be loaded with _define_tiprack_ function in case there are no more tips available to pick
+
+   For example:
+
+       opentrons_96_tiprack_20ul
+3. **deck_situation** (_dict_): Dictionary with deck positions as keys and labware/module object as the value.
+
+   For example:
+
+      {1: Opentrons 96 Tip Rack 20 µL on 1, 2: Opentrons 96 Tip Rack 20 µL on 2, 3: None, 4: None, 5: None, 6: None, 7: None, 8: None, 9: None, 10: None, 11: None}
+4. **vol_source** (_float_): Initial volume of the _pos_source_. For example:
+
+       32030
+5. **vol_distribute_well** (_float_): Volume distributed to the _pos_final_.
+
+   For example:
+
+       15
+6. **pos_source** (_opentrons.protocol_api.labware.Well_): Falcon containing the liquid that will be distributed to the _pos_final_ wells.
+
+   For example:
+
+       B3 of Opentrons 6 Tube Rack with Falcon 50 mL Conical on slot 6
+7. **pos_final** (_list_): list of positions that the _pipette_used_ will distribute the volume set in _vol_distribute_well_.
+
+   For example:
+
+       [A1 of Armadillo 96 Well Plate 200 µL PCR Full Skirt on 2, A2 of Armadillo 96 Well Plate 200 µL PCR Full Skirt on 2, A3 of Armadillo 96 Well Plate 200 µL PCR Full Skirt on 2]
+8. **vol_max_falcon** (_15000 | 50000_): Maximum volume of the falcon tubee established in _pos_source_ that is going to be used to know if the tracking of the height should be in a 15mL falcon or in a 50mL falcon.
+
+   For example:
+
+       50000
+9. **vol_max_transfer** (_float_): Maximum volume can be transferred with the _pipette_used_. This argument is provided because is not always the maximum of th epipette that can be transferred and it is needed to know this volume to calculate how many _vol_distribute_well_ can be transferred in only 1 movement
+
+   For example:
+
+       225
+
+5 optional inputs:
+1. **new_tip** (_never | aspirate | well_): this argument defines when a tip it is going to be changed.
+   - _never_: the same tip is used during all the transferences performed inside of the function. this is the value by default
+   - _aspirate_: a new tip is picked everytime volume is aspired from the falcon tube
+   - _well_: a new tip is picked everytime volume is dispensed in the final position. In case more than one transferring of volume is needed from the source tube to the same final well, everytime it goes to the final well a new tip is going to be picked
+
+   For example:
+
+       aspirate
+2. **replace_tiprack** (_boolean_): that will define if, in case a tiprack is going to be load, the new tip rack will be add to the labware (False) or , if there is an already other tip rack, replace the existent tip rack labware (True). This arguemnt will be given to the function_check_tip_and_pick_ and as default is set as _False_
+
+   For example:
+
+       False
+3. **initial_tip_pip** (_str_): argument that will define, in case that a tiprack needs to be loaded and it is the first one of it, the first tip that will be taken of the tiprack. This argument will be used in the _check_tip_and_pick_ function and as default is established as _A1_
+
+   For example:
+
+       B5
+4. **same_tiprack** (_boolean_): will establish if the tip racks of both right and left pipette are the same ones (True) or different ones (False). This argument will be used in the _check_tip_and_pick_ function and as default is established as _False_
+   
+   For example:
+
+       True
+5. **touch_tip** (_boolean_): argument that will determine if when transferring liquid, a touch tip is produced, it will be done in both initial and final position at the top of the falcon/well. If set as True the pipette will do the touch tip movement and if set as False (the default) it will not.
+
+   For example:
+
+       True
+
+### Output
+* _vol_source_ is the remaining volume in _pos_source_ after distributing the volume to the wells 
+* Wells established in _pos_final_ with _vol_distribute_well_ uL volume in them
+
+### Summary of functioning
+1. Check that the values of some arguments are correct
+2. Check that the pipette can transfer at least 1 _vol_distribute_well_
+3. Check if there is enough volume in the _pos_source_ to distribute _vol_distribute_well_ to all _pos_final_
+4. While loop that will go until all positions of _pos_final_ have been distributed:
+    1. Pick up tip if pipette does not have one
+    2. Check that at least 1 _vol_distribute_well_ can be transferred with the same height
+         
+         **>= 1 _vol_distribute_well_ can be transferred without changing the height**
+         
+         1. Check the _new_tip_ argument
+               
+               _**never**_
+               
+               1. Calculate the number of final positions that can be transferred volume to without changing height
+               
+               _**aspirate**_
+
+               1. Calculate how many final positions can be transferred only with 1 movement of the pipette
+               2. Check if at least 1 _vol_distribute_well_ can be transfferred with 1 movement of the pipette
+
+                     _>=1 vol_distribute_well can be transferred with a movement_
+                     1. Calculate how many final positions can be trasnferred without changing the height of aspiration
+                     
+                     _<1 vol_ditribute_well can be transferred with a movement_
+                     1. Find out how many movements are needed to transfer the volume of 1 _vol_distribute_well_
+                     2. Transfer _vol_distribute_well_ changing the tip in each movement
+                     3. Set in a variable that the transferring has been already performed
+               
+               _**well**_
+               
+               1. Check that the _vol_distribute_well_ can be transferred with only 1 movement of the pipette
+                     
+                     _vol_dsitribute_well cannot be transferred with 1 movement_
+                     1. Find out how many movements are needed to transfer the volume of 1 _vol_distribute_well_
+                     2. Transfer _vol_distribute_well_ changing the tip in each movement
+                     3. Set in a variable that the transferring has been already performed
+               2. Establish that 1 final position is going to be transferred
+         2. Establish the final positions to distribute
+         3. If the volume has not been transferred distribute the volume to the final positions with the pipette
+         4. Recalculate the volume of the tube
+
+         **Not even 1 _vol_distribute_well_ can be transferred without changing the height**
+         1. Find out the maximum movements (with the min volume of the pipette) that would be neccesary to transfer 1 _vol_distribute_well_ and the remaining volume
+         2. If the remaining volume is lower than the pipette minimum volume we substract 1 min volume and add it to the remaining volume
+         3. While loop that will go through all the ammount of movements
+            
+            1. Pick up tip if the pipette has none
+            2. Check the _new_tip_ argument
+
+               **aspirate or well**
+               
+               1. Calculate the maximum ammount of movements can be trasnferred with 1 movement
+               2. Calculate the number of minimum volumes can be transferred without changing height
+
+               **never**
+
+               1. Calculate the number of minimum volumes can be transferred without changing height
+
+            3. Check if at least 1 of the minimum volumes can be transferred without changing height
+
+               **>= 1**
+               1. Transfer the volume
+
+               **== 0**
+               1. Transfer the volume of 1 min pipette volume
+            
+            4. Update the number of min volumes that are remaining
+            5. Depending on the _new_tip_ argument drop the tip or not
+            6. Update the volume of the tube
+         4. Check if there is a remaining volume to transfer to the final well
+
+            **There is a remaining volume**
+            1. Pick up tip if needed
+            2. Transfer the remaining volume to the final position
+            3. Update the volume of the tube
+    3. Update the start position for the remaining positions to transfer volume to
+    4. Depending on the new_tip argument drop the tip or not
+5. Return the remaining volume of the tube
+
 ## `distribute_z_tracking_falcon15ml`
 
 ### Objective
@@ -339,11 +578,11 @@ Opentrons OT-2
     4. Update the volumen of the tube
 4. Return the remaining volume of the tube
 
-## `find_safe_15mLflacon_height`
+## `find_safe_15mLfalcon_height`
 
 ### Objective
 
-A function that will return the height that the pipette should aspirate or dispense the volume without getting wet but it has liquid
+A function that will return the height that the pipette should aspirate or dispense the volume without getting wet but it has liquid in a 15mL falcon
 
 The heights are measured manually.
 
@@ -365,6 +604,46 @@ Opentrons OT-2
    For example:
    
        B1 of Opentrons 15 Tube Rack with Falcon 15 mL Conical on 2
+
+### Output
+
+* **final_position** (_opentrons.types.Location_): Location of the tube with the height position that the pipette is going to aspirate or dispense from given the _vol_falcon_
+
+   For example:
+       
+      Location(point=Point(x=146.38, y=67.74, z=31.849999999999994)
+
+### Summary of functioning
+1. Check the volume that was given in _vol_falcon_
+2. Assign the height measured for that volume
+3. Return position with assigned height
+
+## `find_safe_50mLfalcon_height`
+
+### Objective
+
+A function that will return the height that the pipette should aspirate or dispense the volume without getting wet but it has liquid in a 50mL falcon
+
+The heights are measured manually.
+
+### Tested systems
+
+Opentrons OT-2
+
+### Requirements
+
+### Input
+2 inputs are needed:
+1. **vol_falcon** (_float_): Volume that the tube in the _theory_position_ has.
+
+   For example:
+   
+       18000
+2. **theory_position** (_opentrons.protocol_api.labware.Well_): Tube that will be used to establish at which height the pipette should aspirate or dispense.
+
+   For example:
+   
+       C1 of Opentrons 6 Tube Rack with Falcon 50 mL Conical on slot 1
 
 ### Output
 
@@ -827,21 +1106,21 @@ A function destined to transfer a volume from 1 or more tubes with a volume asso
 
 The tracking of the number of reactions it is done only internally to the function.
 
-This funcion respects the pipette (s) states when calling them, meaning that if the pipette that is going to be used has a tip, it will not be dropped and pick another one, but that tip will be preserved and use until another pipette is choosen or the function finishes. As well, if a pipette which is not used has a tip, that one will not be dropped at any time.
+This funcion respects the pipette(s) states when calling them, meaning that if the pipette that is going to be used has a tip, it will not be dropped and pick another one, but that tip will be preserved and use until another pipette is choosen or the function finishes. As well, if a pipette which is not used has a tip, that one will not be dropped at any time.
 
-On the other hand, the pipettes or pipettes used in this function will drop the tips at the end of this fucntion
+On the other hand, the pipettes or pipettes used in this function will drop the tips at the end of this function
 
 ### Tested systems
 
 Opentrons OT-2
 
 ### Requirements
-* `check_tip_and_pick` function
-* `give_me_optimal_pipette` function
-* `generator_positions` function
+* Function `check_tip_and_pick`
+* Function `give_me_optimal_pipette`
+* Function `generator_positions`
 
 ### Input
-8 inputs are needed
+8 inputs are needed:
 1. **vol_transfer_reaction** (_float_): volume per reaction that needs to be transferred from _positions_source_tubes_ to _positions_final_tubes_.
 
    For example:
@@ -891,47 +1170,55 @@ Opentrons OT-2
    			self.replaceTiprack = True
 8. **protocol** (_opentrons.protocol_api.protocol_context.ProtocolContext_)
 
+1 optional argument:
+1. **new_tip** (_never | source_tube | final_tube | tube | aspirate_): arument that will define how often does the pipette change the tip to transfer a volume of a liquid
+   - _never_: the same tip is going to be used during all the function unless the pipette used to transfer changes
+   - _source_tube_: the tip, besides changing when the pipette changes, is going to change every time the source tube, the one containing the volume, changes
+   - _final_tube_: the tip, besides changing when the pipette changes, is going to change every time the final tube, the one where the liquid is going to transferred to, changes
+   - _tube_: the tip, besides changing when the pipette changes, is going to change every time the source tube, the one containing the volume, and/or the final tube, the one where the liquid is going to transferred to, changes
+   - _aspirate_: the tip, besides changing when the pipette changes, is going to change every time the pipette is going to aspirate liquid from the source tube(s)
+
 ### Output
 
-* Volume transferred from a set of wells to another set of wells
+* Volume transferred from a set of wells/tubes to another set of wells/tubes
 
 ### Summary of functioning
 
-1. Check if _positions_source_tubes_ and _reactions_source_tubes_ have the same dimensions
-2. Check if _positions_final_tubes_ and _reactions_final_tubes_ have the same dimensions
-3. Establish the generator of the source tubes and the used one
-4. Check that the source tubes have enough reactions to transfer to the final tubes
-5. Check that there is at least 1 pipette to perform the transfers
-6. Loop through the _positions_final_tube_ and their reactions
+1. Check if the _new_tip_ argument has a valid value
+2. Check if _positions_source_tubes_ and _reactions_source_tubes_ have the same dimensions
+3. Check if _positions_final_tubes_ and _reactions_final_tubes_ have the same dimensions
+4. Establish the generator of the source tubes and the used one
+5. Check that the source tubes have enough reactions to transfer to the final tubes
+6. Check that there is at least 1 pipette to perform the transfers
+7. Loop through the _positions_final_tube_ and their reactions
    1. While looping until the reactions of the tube are 0
       1. Check if all the volume of the reactions in the tube can be transferred from the current tube of _positions_source_tube_
-         
+
          **It can be transferred**
          1. Calculate the volume to transfer
          2. Take the number of reactions we are going to transfer from the source tube in its corresponding element of _reactions_source_tubes_
          3. Set the number of reactions of the tube from _positions_final_tube_ as 0
-	 
-	 **It CANNOT be transferred**
-    	 1. Calculate the volume that is going to be transferred
-         2. Subtract the number of reactions in the source tube from the _reactions_final_tubes_ element corresponding to the final tube
-         3. Set the reactions of the _positions_source_tube_ element as 0
-      2. Set the optimal pipette for the volume that is going to be transferred and its tiprack and starting tip.
-      3. Check if the optimal pipette is the same as the pipette that was used last time and if they have a tip attached
 
-	      _The optimal pipette is the same as the last pipette, and it does not have a tip_
-	      1. The optimal pipette pick up tip with the function `check_tip_and_pick`
-	         
-	      _The optimal pipette and last pipette do not match_
-	      1. Check if _pipette_use_ is None
-	         _pipette_use is None and optimal_pipette does not have a tip_
-	         1. pick up tip for optimal_pipette
-	         _pipette_use is not None and has a tip_
-		 1. _pipette_use_ drop tip
-	  	 2. if _optimal_pipette_ does not have a tip, it picks up a tip      
-      4. Transfer the volume
-      5. If the source tube element in _reactions_source_tubes_ is 0, we set the source tube as the next element of _positions_source_tubes_
-   2. Check that if it has gone out of the while loop the remaining reactions to transfer is not higher than 0
-7. Drop the tip of the last pipette that has been used if it has a tip
+         **It CANNOT be transferred**
+            1. Calculate the volume that is going to be transferred
+               2. Subtract the number of reactions in the source tube from the _reactions_final_tubes_ element corresponding to the final tube
+               3. Set the reactions of the _positions_source_tube_ element as 0
+      2. Set the optimal pipette for the volume and pick up a tip if needed
+      3. Check the _new_tip_ argument
+
+         **NOT aspirate**
+         1. Transfer the volume
+         
+         **aspirate**
+         1. Calculate the movements and its volumes to transfer the volume from the source tube
+         2. Transfer each volume changing tips everytime an aspiration form the source tube happens
+      4. Check if the source tube needs to be changed
+         
+         **Current source tube has no volume**
+         1. If _new_tip_ is _tube_ or _source_tube_ drop tip
+         2. Try to change to the next tube and if not possible, we break the while loop because there are no more source tubes
+   2. If _new_tip_ is either _tube_ or _final_tube_ we drop the tip attached to the pipette
+8. Drop the tip of the last pipette that has been used if it has a tip
 
 ## `vol_pipette_matcher`
 
