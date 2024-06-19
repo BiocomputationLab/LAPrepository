@@ -1626,6 +1626,5 @@ The columns and rows of the Maps of DNA Parts {user_variables.mapID[index_labwar
 								  final_lid_state = user_variables.finalStateLid,
 								  final_block_state = user_variables.finalTemperatureBlock)
 
-	print(dict(zip(protocol.deck.keys(),protocol.deck.values())))
 	# Final home
 	protocol.home()
