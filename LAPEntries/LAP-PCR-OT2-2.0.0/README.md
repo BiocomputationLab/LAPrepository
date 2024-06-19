@@ -222,5 +222,5 @@ Within others, the following checks are performed:
 2. **Pipette Variables Check**: Verifies that necessary pipette-related variables are correctly set, including `replaceTiprack`, `APINamePipR`, and `startingTipPipR`.
 3. **Sample and Plate Variables Check**: Ensures the consistency and validity of variables related to samples per plate, such as the existence of the maps and their dimensions
 4. **Labware Existence Check**: Confirms that specified labware definitions exist within the Opentrons labware context.
-5. **Volume and Mixing Checks**: Validates that volumes for samples and media are correctly specified and handles mixing parameters appropriately.
-6. **Consistency Checks**: Verifies that there are no contradictory settings, such as volumes higher than the capacity of the final plates
+5. **Volume and Mixing Checks**: Validates that volumes for samples and different reagents are coherent such as not being individually larger than the final volume.
+6. **Consistency Checks**: Verifies that there are no contradictory settings, such as if having the thermocycler as True needing more than 1 final plate would raise an error
