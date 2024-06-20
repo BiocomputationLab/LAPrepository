@@ -39,7 +39,11 @@ For more information about the usage and excel file of this LAP entry go to the 
 
 The script is divided into several key sections, each handling a specific aspect of the protocol
 
-This is not an explanation of the whole script line by line but an explanation of how the script is structured and what behaviour to expect for the different code blocks. The code  given in this document is modified for better reading and summarize the script's structure, it is not exactly the one in the script and some command does not exist in reality for the sake of comprehension
+This is not an explanation of the whole script line by line but an explanation of how the script is structured and what behaviour to expect for the different code blocks. The code  given in this document is modified for better reading and summarize the script's structure, it is not exactly the one in the script
+
+Please note that the code snippets provided in this README are simplified and modified versions of the actual script.
+
+Some commands have been altered for readability and comprehension (do not copy this code because it may not work), and as well the sections of the code are summarized. For the exact code and structure go to the script itself, which is commented as well.
 
 For the explanation of the functions used in the script go to the directory SetFunctions of this github repository (https://github.com/BiocomputationLab/LAPrepository/tree/main/SetFunctions)
 
