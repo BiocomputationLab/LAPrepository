@@ -46,7 +46,7 @@ Not every line of the script is explained in this README; only selected parts ar
 
 Please note that the code snippets provided in this README are simplified and modified versions of the actual script.
 
-Some commands have been altered for readability and comprehension (do not copy this code because it may not work), and as well the sections of the code are summarized.
+Some commands have been altered for readability and comprehension (do not copy this code because it may not work), and as well the sections of the code are summarized. For the exact code and structure go to the script itself, which is commented as well.
 
 For the explanation of the functions used in the script go to the directory SetFunctions of this github repository (https://github.com/BiocomputationLab/LAPrepository/tree/main/SetFunctions)
 
