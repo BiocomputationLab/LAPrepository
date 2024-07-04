@@ -300,15 +300,36 @@ Opentrons OT-2
 
 2 Inputs are required:
 1. **wells** (_list | opentrons.protocol_api.labware.Well_): well or list of wells that are going to be returned as positions
+
+   For example:
+
+	   [A1 of Armadillo 96 Well Plate 200 µL PCR Full Skirt on 2, A2 of Armadillo 96 Well Plate 200 µL PCR Full Skirt on 2, A3 of Armadillo 96 Well Plate 200 µL PCR Full Skirt on 2]
 2. **position** (_bottom | center | top_): the desired position of the wells that is going to be returned
 
+   For example:
+	   bottom
+   
 3 optional arguments:
 1. **volumes** (_list_): list that must have the same length as the list provided in _wells_ that will give the volumes of each one of them in the same order, i.e., the first element in the _wells_ list is assumed to have the volume indicated in the first element of this list.
 By default is None.
-2. **sort** (_boolean_): argument that will define if the output list of positions will be returned sorted by their respective volumes or not.
+
+   For example:
+
+	   [20, 35, 5]
+   
+3. **sort** (_boolean_): argument that will define if the output list of positions will be returned sorted by their respective volumes or not.
 By default is False.
-3. **ordering** (_ascending | descending_): The way the sorting of the list _wells_ is going to be sorted.
+
+   For example:
+
+	   True
+
+5. **ordering** (_ascending | descending_): The way the sorting of the list _wells_ is going to be sorted.
 By default is ascending.
+
+   For example:
+
+	   descending
 
 ### Output
  * Position or list of positions corresponding to the position indicated in _position_ of each of the elements in the list _wells_ either sorted by volume or not depending on the value of _sort
