@@ -7,7 +7,7 @@ This repository contains the python script, the excel template of variables and 
 - [Overview](#overview)
 - [Requirements](#requirements)
 - [Usage](#usage)
-- [Script Structure](#script-structurescript)
+- [Script Structure](#script-structure)
 - [Error Handling](#error-handling)
 
 ## Overview
