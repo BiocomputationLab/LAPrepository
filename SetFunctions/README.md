@@ -332,7 +332,7 @@ By default is ascending.
 	   descending
 
 ### Output
- * Position or list of positions corresponding to the position indicated in _position_ of each of the elements in the list _wells_ either sorted by volume or not depending on the value of _sort
+ * Position or list of positions corresponding to the position indicated in _position_ of each of the elements in the list _wells_ either sorted by volume or not depending on the value of _sort_
  * (Optional) Either the value None if the value of _sort_ is False or a list of the volumes correpsonding to the sorted wells if _sort_ is True. This will be returned if the value of _wells_ is a list
 
 ### Summary of functioning
