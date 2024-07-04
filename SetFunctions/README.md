@@ -266,6 +266,7 @@ Opentrons OT-2
    For example:
 
 	   modules
+
 ### Output
 
 * A dictionary in which the keys are the values of the column 'Name' of the _pd_combination_ and the values are another dictionary with 2 keys, 'acceptor' and 'modules'.
@@ -283,6 +284,55 @@ Each row of the _pd_combiantion_ will be one item of the dictionary.
    2. Fill the list of the item corresponding to _name_key_rest_columns_ with the values of the columns that are not _column_key_ and _column_isolated_
 3. Return the final dictionary _combination_dict_
    
+## `conversor_well_position_sorter`
+
+### Objective
+
+A function that will receive a list of well(s) and return a list of positions (top, bottom or center positions) sorted by the volume of those wells if the correct arguments are provided.
+
+### Tested systems
+
+Opentrons OT-2
+
+### Requirements
+
+### Input
+
+2 Inputs are required:
+1. **wells** (_list | opentrons.protocol_api.labware.Well_): well or list of wells that are going to be returned as positions
+2. **position** (_bottom | center | top_): the desired position of the wells that is going to be returned
+
+3 optional arguments:
+1. **volumes** (_list_): list that must have the same length as the list provided in _wells_ that will give the volumes of each one of them in the same order, i.e., the first element in the _wells_ list is assumed to have the volume indicated in the first element of this list.
+By default is None.
+2. **sort** (_boolean_): argument that will define if the output list of positions will be returned sorted by their respective volumes or not.
+By default is False.
+3. **ordering** (_ascending | descending_): The way the sorting of the list _wells_ is going to be sorted.
+By default is ascending.
+
+### Output
+ * Position or list of positions corresponding to the position indicated in _position_ of each of the elements in the list _wells_ either sorted by volume or not depending on the value of _sort
+ * (Optional) Either the value None if the value of _sort_ is False or a list of the volumes correpsonding to the sorted wells if _sort_ is True. This will be returned if the value of _wells_ is a list
+
+### Summary of functioning
+1. Check the values of the different arguemnts
+2. Check if the value sort is True:
+   1. Creation of a dictionary with _wells_ and _volumes_
+   2. Sort items of the dictionary by the values of the values
+   3. Extract the keys and values of the sorted dictionary
+3. Check the type of _wells_
+   
+   **List**
+   
+   1. Creation of a list
+   2. Append the position of the each element of the list to the previously create dlist
+   
+   **Not List**
+
+   1. Return the position of the well established in _wells_
+
+4. Return the list of positions and volumes
+
 ## `define_tiprack`
 
 ### Objective
