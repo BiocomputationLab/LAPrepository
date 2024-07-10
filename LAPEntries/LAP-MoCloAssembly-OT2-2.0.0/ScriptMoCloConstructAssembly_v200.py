@@ -1379,8 +1379,8 @@ def run(protocol:opentrons.protocol_api.ProtocolContext):
 		# program_variables.samplePlates[index_labware]['Map Names'] = pd.read_excel("VariablesMoCloAssembly.xlsx", sheet_name = user_variables.nameSheetMapParts[index_labware], index_col = 0, engine = "openpyxl")
 		program_variables.samplePlates[index_labware]['Map Volumes'] = pd.DataFrame(0, index = list(program_variables.samplePlates[index_labware]["Opentrons Place"].rows_by_name().keys()), columns = list(program_variables.samplePlates[index_labware]["Opentrons Place"].columns_by_name().keys()))
 		program_variables.samplePlates[index_labware]['Map Liquid Definitions'] = pd.DataFrame(np.nan, index = list(program_variables.samplePlates[index_labware]["Opentrons Place"].rows_by_name().keys()), columns = list(program_variables.samplePlates[index_labware]["Opentrons Place"].columns_by_name().keys()))
-		program_variables.samplePlates[index_labware]['Map Final Combinations Acceptor'] = pd.DataFrame(np.nan, index = list(program_variables.samplePlates[index_labware]["Opentrons Place"].rows_by_name().keys()), columns = list(program_variables.samplePlates[index_labware]["Opentrons Place"].columns_by_name().keys()))
-		program_variables.samplePlates[index_labware]['Map Final Combinations Module'] = pd.DataFrame(np.nan, index = list(program_variables.samplePlates[index_labware]["Opentrons Place"].rows_by_name().keys()), columns = list(program_variables.samplePlates[index_labware]["Opentrons Place"].columns_by_name().keys()))
+		program_variables.samplePlates[index_labware]['Map Final Combinations Acceptor'] = pd.DataFrame(np.nan, dtype = object, index = list(program_variables.samplePlates[index_labware]["Opentrons Place"].rows_by_name().keys()), columns = list(program_variables.samplePlates[index_labware]["Opentrons Place"].columns_by_name().keys()))
+		program_variables.samplePlates[index_labware]['Map Final Combinations Module'] = pd.DataFrame(np.nan, dtype = object, index = list(program_variables.samplePlates[index_labware]["Opentrons Place"].rows_by_name().keys()), columns = list(program_variables.samplePlates[index_labware]["Opentrons Place"].columns_by_name().keys()))
 
 		# Let's check that the labware and map have the same names of the rows and columns
 		row_names = list(labware[1].rows_by_name().keys())
@@ -1403,7 +1403,6 @@ The columns and rows of the Maps of DNA Parts {user_variables.nameSheetMapParts[
 		for id_combination, combination in program_variables.combinations.items():
 			# Let's see if the acceptor of this combination is in the map of this labware
 			well = program_variables.samplePlates[index_labware]['Map Names'][program_variables.samplePlates[index_labware]['Map Names'].isin([combination["acceptor"]])].stack()
-
 			if len(well) > 0: # If it enters this loop, the acceptor is in this labware
 				row_well, column_well = well.index[0]
 				
@@ -1411,17 +1410,17 @@ The columns and rows of the Maps of DNA Parts {user_variables.nameSheetMapParts[
 				program_variables.samplePlates[index_labware]['Map Volumes'].loc[row_well, str(column_well)] += user_variables.acceptorVolume
 				
 				# Add that combination to the final wells where this acceptor is going to be transferred to
-				if isinstance(program_variables.samplePlates[index_labware]['Map Final Combinations Acceptor'].at[row_well, str(column_well)], list):
-					program_variables.samplePlates[index_labware]['Map Final Combinations Acceptor'].loc[row_well, str(column_well)].append(id_combination)
+				if isinstance(program_variables.samplePlates[index_labware]['Map Final Combinations Acceptor'].loc[row_well, str(column_well)], list):
+					program_variables.samplePlates[index_labware]['Map Final Combinations Acceptor'].at[row_well, str(column_well)].append(id_combination)
 				else:
-					program_variables.samplePlates[index_labware]['Map Final Combinations Acceptor'].loc[row_well, str(column_well)] = [id_combination]
+					program_variables.samplePlates[index_labware]['Map Final Combinations Acceptor'].at[row_well, str(column_well)] = [id_combination]
 
 				# Definition of acceptor liquid
 				if pd.isna(program_variables.samplePlates[index_labware]['Map Liquid Definitions'].loc[row_well,str(column_well)]):
 					while True:
 						color_liquid = f"#{random.randint(0, 0xFFFFFF):06x}"
 						if color_liquid.lower() not in program_variables.colors_mediums:
-							program_variables.samplePlates[index_labware]['Map Liquid Definitions'].loc[row_well,str(column_well)] = protocol.define_liquid(
+							program_variables.samplePlates[index_labware]['Map Liquid Definitions'].at[row_well,str(column_well)] = protocol.define_liquid(
 								name = combination["acceptor"],
 								description = f"",
 								display_color = color_liquid
@@ -2349,7 +2348,6 @@ Possible ways to fix this error:
 								final_wells.append(program_variables.combinations[combination_with_part]["Position"].center())
 							else:
 								final_wells.append(program_variables.combinations[combination_with_part]["Position"])
-						
 						# Now we distribute to the final wells this scpecific acceptor taking in account the new_tip argument
 						if user_variables.changeTipDistribute in ["part", "never"]:
 							optimal_pipette_acceptor.distribute(user_variables.acceptorVolume,
