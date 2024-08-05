@@ -1,0 +1,73 @@
+---
+Keywords: High-throughput, Opentrons
+Script: 
+ name: ScriptMixingReagents_v100.py
+ title: Custom Mixing Single/Multi-Channel Pipette
+ version: 1.0.0
+ description: >
+  Creation of reactive combination final plates with its given volumes with either a single-channel or multi-channel pipette(s)
+ downloadURL: https://github.com/BiocomputationLab/LAPrepository/tree/main/LAPEntries/LAP-CustomReagentMixingMultiSinglePip-OT2-1.0.0
+ date: 05/08/2024
+Author:
+ name: Biocomputation Lab
+ institution: CBGP UPM-INIA
+ email: biocomputationlab@gmail.com
+ web: https://biocomputationlab.com/
+Language:
+ name: python
+ version: 3.7.1
+ download: https://www.python.org/downloads/
+Platform:
+ name: Opentrons OT-2
+ versionAPI: 2.14
+Environment:
+ system: Linux
+ osVersion: 4.14.74
+Requirements:
+ - "opentrons >= 7.0.2"
+ - "pandas >= 0.25.3"
+ - "numpy >= 1.15.1"
+ - "openpyxl >= 3.1.2"
+ - "math"
+ - "random"
+ - "time"
+ - "itertools"
+Input:
+ nameFile: VariablesCustomMixing
+ extension: XLSX
+ minNumberSheets: 5
+ GeneralVariables:
+  columnNames:
+   - Variable Names
+   - Value
+  rowNames:
+   - API Name Labware with Reagent(s) in Tube(s)
+   - Type of Reagent Tube
+   - API Name Labware with Reagents(s) in Plate(s)
+   - API Name Final Plate
+   - Number of Final Plates
+   - Change Tip In Distribution
+   - Position Dispense Final Well
+   - Touch Tip After Dispense
+   - Internal Replicas
+   - Optimization Space Source Plate Reagents Disposition
+ PipetteVariables:
+  columnNames:
+   - Variable Names
+   - Value
+  rowNames:
+   - Name Right Pipette
+   - API Name Right Pipette TipRack
+   - Initial Tip Right Pipette
+   - Name Left Pipette
+   - API Name Left Pipette TipRack
+   - Initial Tip Left Pipette
+   - Replace Tipracks
+ FinalPlatesVariables:
+  columnNames:
+   - Variable Names
+  rowNames:
+   - Number of Replicas
+   - Name Sheet Map Reagents
+   - Name Sheet Map Volumes
+   - Type of Pipette to Create Plate
