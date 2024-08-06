@@ -4,7 +4,8 @@
 # This code belongs to the entry of the LAP repository LAP-CustomReagentMixingMultiSinglePip-OT2-1.0.0
 
 # For more info go to https://github.com/BiocomputationLab/LAPrepository/tree/main/LAPEntries/LAP-CustomReagentMixingMultiSinglePip-OT2-1.0.0 or
-# http://www.laprepo.com entry https://laprepo.com/protocol/custom-mixing-single-multi-channel-pipette/
+# http://www.laprepo.com entry https://laprepo.com/protocol/custom-mixing-single-multi-channel-pipette/ or
+# in the protocols.io entry https://www.protocols.io/view/ot-2-custom-mixing-with-single-or-multi-channel-pi-5jyl82686l2w/v1
 
 # The user inputs maps and variables that dictate the following, within other aspects and specificactions of the script:
 #  - Volumes and Reactants: Different reactants and their corresponding volumes to be dispensed into each well.
